@@ -114,7 +114,9 @@ class ActionTerm(ManagerTermBase):
             if self._debug_vis_handle is None:
                 app_interface = omni.kit.app.get_app_interface()
                 self._debug_vis_handle = app_interface.get_post_update_event_stream().create_subscription_to_pop(
-                    lambda event, obj=weakref.proxy(self): obj._debug_vis_callback(event)
+                    lambda event, obj=weakref.proxy(self): obj._debug_vis_callback(
+                        event
+                    )
                 )
         else:
             # remove the subscriber if it exists
@@ -151,13 +153,17 @@ class ActionTerm(ManagerTermBase):
         and input ``debug_vis`` is True. If the visualization objects exist, the function should
         set their visibility into the stage.
         """
-        raise NotImplementedError(f"Debug visualization is not implemented for {self.__class__.__name__}.")
+        raise NotImplementedError(
+            f"Debug visualization is not implemented for {self.__class__.__name__}."
+        )
 
     def _debug_vis_callback(self, event):
         """Callback for debug visualization.
         This function calls the visualization objects and sets the data to visualize into them.
         """
-        raise NotImplementedError(f"Debug visualization is not implemented for {self.__class__.__name__}.")
+        raise NotImplementedError(
+            f"Debug visualization is not implemented for {self.__class__.__name__}."
+        )
 
 
 class ActionManager(ManagerBase):
@@ -192,8 +198,11 @@ class ActionManager(ManagerBase):
         # call the base class constructor (this prepares the terms)
         super().__init__(cfg, env)
         # create buffers to store actions
-        self._action = torch.zeros((self.num_envs, self.total_action_dim), device=self.device)
+        self._action = torch.zeros(
+            (self.num_envs, self.total_action_dim), device=self.device
+        )
         self._prev_action = torch.zeros_like(self._action)
+        self._prev_prev_action = torch.zeros_like(self.action)
 
         # check if any term has debug visualization implemented
         self.cfg.debug_vis = False
@@ -250,6 +259,11 @@ class ActionManager(ManagerBase):
         return self._prev_action
 
     @property
+    def prev_prev_action(self) -> torch.Tensor:
+        """The previous previous actions sent to the environment. Shape is (num_envs, total_action_dim)."""
+        return self._prev_prev_action
+
+    @property
     def has_debug_vis_implementation(self) -> bool:
         """Whether the command terms have debug visualization implemented."""
         # check if function raises NotImplementedError
@@ -288,6 +302,7 @@ class ActionManager(ManagerBase):
             env_ids = slice(None)
         # reset the action history
         self._prev_action[env_ids] = 0.0
+        self._prev_prev_action[env_ids] = 0.0
         self._action[env_ids] = 0.0
         # reset all action terms
         for term in self._terms.values():
@@ -306,8 +321,11 @@ class ActionManager(ManagerBase):
         """
         # check if action dimension is valid
         if self.total_action_dim != action.shape[1]:
-            raise ValueError(f"Invalid action shape, expected: {self.total_action_dim}, received: {action.shape[1]}.")
+            raise ValueError(
+                f"Invalid action shape, expected: {self.total_action_dim}, received: {action.shape[1]}."
+            )
         # store the input actions
+        self._prev_prev_action[:] = self._prev_action[:]
         self._prev_action[:] = self._action
         self._action[:] = action.to(self.device)
 
@@ -367,7 +385,9 @@ class ActionManager(ManagerBase):
             term = term_cfg.class_type(term_cfg, self._env)
             # sanity check if term is valid type
             if not isinstance(term, ActionTerm):
-                raise TypeError(f"Returned object for the term '{term_name}' is not of type ActionType.")
+                raise TypeError(
+                    f"Returned object for the term '{term_name}' is not of type ActionType."
+                )
             # add term name and parameters
             self._term_names.append(term_name)
             self._terms[term_name] = term
