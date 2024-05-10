@@ -88,6 +88,9 @@ from isaaclab.sim.converters import UrdfConverter, UrdfConverterCfg
 from isaaclab.utils.assets import check_file_path
 from isaaclab.utils.dict import print_dict
 
+DEFAULT_DAMPING = 6.0
+DEFUALT_STIFFNESS = 300.0
+
 
 def main():
     # check valid file path
@@ -117,6 +120,13 @@ def main():
             target_type=args_cli.joint_target_type,
         ),
     )
+
+    # Add default damping and stiffness for pyhsics inspection.
+    if args_cli.fix_base:
+        urdf_converter_cfg.default_drive_damping = DEFAULT_DAMPING
+        urdf_converter_cfg.default_drive_stiffness = DEFUALT_STIFFNESS
+        urdf_converter_cfg.default_drive_type = "position"
+        print(f"Set default stifness: {DEFUALT_STIFFNESS}, and default damping: {DEFAULT_DAMPING}")
 
     # Print info
     print("-" * 80)
