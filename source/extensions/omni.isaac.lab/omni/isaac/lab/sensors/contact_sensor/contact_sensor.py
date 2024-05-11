@@ -379,11 +379,16 @@ class ContactSensor(SensorBase):
             # create markers if necessary for the first tome
             if not hasattr(self, "contact_visualizer"):
                 self.contact_visualizer = VisualizationMarkers(self.cfg.visualizer_cfg)
+                # Force vector.
+                self.contact_force_visualizer = VisualizationMarkers(self.cfg.force_visualizer_cfg)
+
             # set their visibility to true
             self.contact_visualizer.set_visibility(True)
+            self.contact_force_visualizer.set_visibility(True)
         else:
             if hasattr(self, "contact_visualizer"):
                 self.contact_visualizer.set_visibility(False)
+                self.contact_force_visualizer.set_visibility(False)
 
     def _debug_vis_callback(self, event):
         # safely return if view becomes invalid
@@ -403,6 +408,12 @@ class ContactSensor(SensorBase):
         # visualize
         self.contact_visualizer.visualize(frame_origins.view(-1, 3), marker_indices=marker_indices.view(-1))
 
+        # visualize force
+        force_scale, force_quat = self._resolve_force_to_arrow(self._data.net_forces_w)
+        self.contact_force_visualizer.visualize(
+            frame_origins.view(-1, 3), force_quat.view(-1, 4), force_scale.view(-1, 3)
+        )
+
     """
     Internal simulation callbacks.
     """
@@ -415,3 +426,19 @@ class ContactSensor(SensorBase):
         self._physics_sim_view = None
         self._body_physx_view = None
         self._contact_physx_view = None
+
+    def _resolve_force_to_arrow(self, force: torch.Tensor):
+        # obtain default scale of the marker
+        # default_scale = self.contact_force_visualizer.cfg.markers["arrow"].scale
+        # arrow-scale
+        arrow_scale = torch.tensor([0.02], device=self.device).repeat(force.shape[0], force.shape[1], 3)
+        force_norm = torch.linalg.norm(force, dim=2)
+        arrow_scale[:, :, 2] *= force_norm
+        # arrow-direction
+        arrow_z = torch.tensor((0, 0, 1.0), device=self.device)
+        force_n = torch.nn.functional.normalize(force, dim=-1)
+        cross_p = torch.linalg.cross(arrow_z[None, None, :], force_n)
+        qw = torch.matmul(arrow_z[None, None, None, :], force_n[..., None])[..., 0]
+        arrow_quat = torch.cat((qw, cross_p), axis=-1)
+
+        return arrow_scale, arrow_quat

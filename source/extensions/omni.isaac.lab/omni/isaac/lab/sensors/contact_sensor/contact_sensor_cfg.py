@@ -6,6 +6,7 @@
 from omni.isaac.lab.markers import VisualizationMarkersCfg
 from omni.isaac.lab.markers.config import CONTACT_SENSOR_MARKER_CFG
 from omni.isaac.lab.utils import configclass
+import omni.isaac.lab.sim as sim_utils
 
 from ..sensor_base_cfg import SensorBaseCfg
 from .contact_sensor import ContactSensor
@@ -51,8 +52,27 @@ class ContactSensorCfg(SensorBaseCfg):
         for more details.
     """
 
-    visualizer_cfg: VisualizationMarkersCfg = CONTACT_SENSOR_MARKER_CFG.replace(prim_path="/Visuals/ContactSensor")
+    visualizer_cfg: VisualizationMarkersCfg = CONTACT_SENSOR_MARKER_CFG.replace(
+        prim_path="/Visuals/ContactSensor"
+    )
     """The configuration object for the visualization markers. Defaults to CONTACT_SENSOR_MARKER_CFG.
+
+    .. note::
+        This attribute is only used when debug visualization is enabled.
+    """
+
+    force_visualizer_cfg: VisualizationMarkersCfg = VisualizationMarkersCfg(
+        markers={
+            "arrow": sim_utils.CylinderCfg(
+                radius=2.0,
+                height=0.5,
+                visual_material=sim_utils.PreviewSurfaceCfg(
+                    diffuse_color=(0.0, 1.0, 0.0)
+                ),
+            ),
+        }
+    ).replace(prim_path="/Visuals/ForceContactSensor")
+    """The configuration object for the visualization force markers.
 
     .. note::
         This attribute is only used when debug visualization is enabled.
