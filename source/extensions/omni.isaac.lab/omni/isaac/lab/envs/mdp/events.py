@@ -83,7 +83,7 @@ def randomize_rigid_body_material(
     # sample material properties from the given ranges
     material_samples = torch.zeros(materials[env_ids].shape)
     material_samples[..., 0].uniform_(*static_friction_range)
-    material_samples[..., 1].uniform_(*dynamic_friction_range)
+    material_samples[..., 1] = material_samples[..., 0] - 0.1
     material_samples[..., 2].uniform_(*restitution_range)
 
     # create uniform range tensor for bucketing
