@@ -82,6 +82,9 @@ class ActuatorBase(ABC):
     damping: torch.Tensor
     """The damping (D gain) of the PD controller. Shape is (num_envs, num_joints)."""
 
+    joint_damping: torch.Tensor
+    """The joint damping (implicit) of the actuator joints. Shape is (num_envs, num_joints)."""
+
     armature: torch.Tensor
     """The armature of the actuator joints. Shape is (num_envs, num_joints)."""
 
@@ -110,6 +113,7 @@ class ActuatorBase(ABC):
         device: str,
         stiffness: torch.Tensor | float = 0.0,
         damping: torch.Tensor | float = 0.0,
+        joint_damping: torch.Tensor | float = 0.0,
         armature: torch.Tensor | float = 0.0,
         friction: torch.Tensor | float = 0.0,
         dynamic_friction: torch.Tensor | float = 0.0,
@@ -172,6 +176,7 @@ class ActuatorBase(ABC):
             ("effort_limit_sim", effort_limit),
             ("stiffness", stiffness),
             ("damping", damping),
+            ("joint_damping", joint_damping),
             ("armature", armature),
             ("friction", friction),
             ("dynamic_friction", dynamic_friction),

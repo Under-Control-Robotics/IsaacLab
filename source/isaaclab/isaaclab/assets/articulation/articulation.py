@@ -218,6 +218,8 @@ class Articulation(AssetBase):
         if self._has_implicit_actuators:
             self.root_physx_view.set_dof_position_targets(self._joint_pos_target_sim, self._ALL_INDICES)
             self.root_physx_view.set_dof_velocity_targets(self._joint_vel_target_sim, self._ALL_INDICES)
+        else:
+            self.root_physx_view.set_dof_velocity_targets(self._joint_vel_target_sim, self._ALL_INDICES)
 
     def update(self, dt: float):
         self._data.update(dt)
@@ -1696,12 +1698,14 @@ class Articulation(AssetBase):
                 self._has_implicit_actuators = True
                 # the gains and limits are set into the simulation since actuator model is implicit
                 self.write_joint_stiffness_to_sim(actuator.stiffness, joint_ids=actuator.joint_indices)
-                self.write_joint_damping_to_sim(actuator.damping, joint_ids=actuator.joint_indices)
+                self.write_joint_damping_to_sim(
+                    actuator.damping + actuator.joint_damping, joint_ids=actuator.joint_indices
+                )
             else:
                 # the gains and limits are processed by the actuator model
                 # we set gains to zero, and torque limit to a high value in simulation to avoid any interference
                 self.write_joint_stiffness_to_sim(0.0, joint_ids=actuator.joint_indices)
-                self.write_joint_damping_to_sim(0.0, joint_ids=actuator.joint_indices)
+                self.write_joint_damping_to_sim(actuator.joint_damping, joint_ids=actuator.joint_indices)
 
             # Set common properties into the simulation
             self.write_joint_effort_limit_to_sim(actuator.effort_limit_sim, joint_ids=actuator.joint_indices)
