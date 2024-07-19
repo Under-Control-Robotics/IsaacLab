@@ -49,10 +49,23 @@ class ActuatorBaseCfg:
     If None, the stiffness is set to the value from the USD joint prim.
     """
 
+    # Note:
+    # Damping is the active damping from the actuator,
+    # while joint_damping is the passive damping.
+    # For implicit actuator: the damping is the sum of twwo damping.
+    # For explicit actuator: the damping is used for computing the torque,
+    # and the joint damping is used as part of the simulator.
+
     damping: dict[str, float] | float | None = MISSING
     """Damping gains (also known as d-gain) of the joints in the group.
 
     If None, the damping is set to the value from the USD joint prim.
+    """
+
+    joint_damping: dict[str, float] | float | None = None
+    """Passive joint damping of the joints in the group.
+
+    If None, the damping is set to zero.
     """
 
     armature: dict[str, float] | float | None = None

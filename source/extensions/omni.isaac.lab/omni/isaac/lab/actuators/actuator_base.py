@@ -63,6 +63,7 @@ class ActuatorBase(ABC):
         device: str,
         stiffness: torch.Tensor | float = 0.0,
         damping: torch.Tensor | float = 0.0,
+        joint_damping: torch.Tensor | float = 0.0,
         armature: torch.Tensor | float = 0.0,
         friction: torch.Tensor | float = 0.0,
         effort_limit: torch.Tensor | float = torch.inf,
@@ -104,6 +105,7 @@ class ActuatorBase(ABC):
         # parse joint stiffness and damping
         self.stiffness = self._parse_joint_parameter(self.cfg.stiffness, stiffness)
         self.damping = self._parse_joint_parameter(self.cfg.damping, damping)
+        self.joint_damping = self._parse_joint_parameter(self.cfg.joint_damping, joint_damping)
         # parse joint armature and friction
         self.armature = self._parse_joint_parameter(self.cfg.armature, armature)
         self.friction = self._parse_joint_parameter(self.cfg.friction, friction)

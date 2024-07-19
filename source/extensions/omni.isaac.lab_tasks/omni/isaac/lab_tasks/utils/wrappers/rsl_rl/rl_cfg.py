@@ -26,7 +26,10 @@ class RslRlPpoActorCriticCfg:
     """The hidden dimensions of the critic network."""
 
     activation: str = MISSING
-    """The activation function for the actor and critic networks."""
+    """The activation function for the actor networks."""
+
+    critic_activation: str = MISSING
+    """The activation function for the critic networks."""
 
 
 @configclass
