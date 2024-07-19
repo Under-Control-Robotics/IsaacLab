@@ -83,6 +83,9 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
         self.episode_length_buf = torch.zeros(self.num_envs, device=self.device, dtype=torch.long)
         print("[INFO]: Completed setting up the environment...")
 
+        # Set the render_fps for video recording.
+        self.metadata["render_fps"] = int(1.0 / (cfg.sim.dt * cfg.decimation))
+
     """
     Properties.
     """
