@@ -412,11 +412,9 @@ class ContactSensor(SensorBase):
         self._contact_physx_view = None
 
     def _resolve_force_to_arrow(self, force: torch.Tensor):
-        # obtain default scale of the marker
-        # default_scale = self.contact_force_visualizer.cfg.markers["arrow"].scale
         # arrow-scale
-        arrow_scale = torch.tensor([0.02], device=self.device).repeat(force.shape[0], force.shape[1], 3)
-        force_norm = torch.linalg.norm(force, dim=2)
+        arrow_scale = torch.tensor([0.05], device=self.device).repeat(force.shape[0], force.shape[1], 3)
+        force_norm = torch.linalg.norm(force, dim=2) * 0.02
         arrow_scale[:, :, 2] *= force_norm
         # arrow-direction
         arrow_z = torch.tensor((0, 0, 1.0), device=self.device)
