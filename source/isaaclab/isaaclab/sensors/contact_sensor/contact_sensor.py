@@ -412,9 +412,10 @@ class ContactSensor(SensorBase):
             # since this function is called every frame, we can use the difference to get the elapsed time
             elapsed_time = self._timestamp[env_ids] - self._timestamp_last_update[env_ids]
             # -- check contact state of bodies
+            time_threshold = 0.05  # in seconds
             is_contact = torch.norm(self._data.net_forces_w[env_ids, :, :], dim=-1) > self.cfg.force_threshold
-            is_first_contact = (self._data.current_air_time[env_ids] > 0) * is_contact
-            is_first_detached = (self._data.current_contact_time[env_ids] > 0) * ~is_contact
+            is_first_contact = (self._data.current_air_time[env_ids] > time_threshold) * is_contact
+            is_first_detached = (self._data.current_contact_time[env_ids] > time_threshold) * ~is_contact
             # -- update the last contact time if body has just become in contact
             self._data.last_air_time[env_ids] = torch.where(
                 is_first_contact,
