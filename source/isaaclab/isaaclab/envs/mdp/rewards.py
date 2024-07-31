@@ -278,7 +278,8 @@ def desired_contacts(env, sensor_cfg: SceneEntityCfg, threshold: float = 1.0) ->
     return 1.0 * zero_contact
 
 
-def contact_forces(env: ManagerBasedRLEnv, threshold: float, sensor_cfg: SceneEntityCfg) -> torch.Tensor:
+def contact_forces(env: ManagerBasedRLEnv, threshold: float, clip_max: float,
+                   sensor_cfg: SceneEntityCfg) -> torch.Tensor:
     """Penalize contact forces as the amount of violations of the net contact force."""
     # extract the used quantities (to enable type-hinting)
     contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
@@ -286,7 +287,7 @@ def contact_forces(env: ManagerBasedRLEnv, threshold: float, sensor_cfg: SceneEn
     # compute the violation
     violation = torch.max(torch.norm(net_contact_forces[:, :, sensor_cfg.body_ids], dim=-1), dim=1)[0] - threshold
     # compute the penalty
-    return torch.sum(violation.clip(min=0.0), dim=1)
+    return torch.sum(violation.clip(min=0.0, max=clip_max), dim=1)
 
 
 """
