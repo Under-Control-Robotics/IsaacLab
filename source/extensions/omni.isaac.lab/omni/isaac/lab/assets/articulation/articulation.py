@@ -1130,6 +1130,7 @@ class Articulation(AssetBase):
             # note: for efficiency avoid indexing when over all indices
             actuator: ActuatorBase = actuator_cfg.class_type(
                 cfg=actuator_cfg,
+                name=actuator_name,
                 joint_names=joint_names,
                 joint_ids=(
                     slice(None) if len(joint_names) == self.num_joints else torch.tensor(joint_ids, device=self.device)

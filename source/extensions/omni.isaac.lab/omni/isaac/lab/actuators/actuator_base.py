@@ -57,6 +57,7 @@ class ActuatorBase(ABC):
     def __init__(
         self,
         cfg: ActuatorBaseCfg,
+        name: str,
         joint_names: list[str],
         joint_ids: slice | Sequence[int],
         num_envs: int,
@@ -96,6 +97,7 @@ class ActuatorBase(ABC):
                 If a tensor, then the shape is (num_envs, num_joints).
         """
         # save parameters
+        self._name = name
         self.cfg = cfg
         self._num_envs = num_envs
         self._device = device
