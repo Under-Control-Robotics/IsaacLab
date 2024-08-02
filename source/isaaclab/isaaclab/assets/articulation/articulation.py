@@ -1672,6 +1672,7 @@ class Articulation(AssetBase):
             # note: for efficiency avoid indexing when over all indices
             actuator: ActuatorBase = actuator_cfg.class_type(
                 cfg=actuator_cfg,
+                name=actuator_name,
                 joint_names=joint_names,
                 joint_ids=joint_ids,
                 num_envs=self.num_instances,
