@@ -22,6 +22,19 @@ if TYPE_CHECKING:
     from . import actions_cfg
 
 
+def compute_tanh_shift(k1, k2, y0):
+    numerator = k1 * k2 + y0 * k1
+    denominator = k1 * k2 - y0 * k2
+    shift = 0.5 * torch.log(numerator / denominator)
+    return shift
+
+def asymetric_tanh(x: torch.Tensor, k1: torch.Tensor, k2: torch.Tensor, x_shift: torch.Tensor) -> torch.Tensor:
+    e2x = torch.exp((x + x_shift) * 2.)
+    tanh_pos = (e2x - 1.) / (e2x / k1 + 1. / k2)
+    e2nx = torch.exp((-x - x_shift) * 2.)
+    tanh_neg = (1. - e2nx) / (1. / k1 + e2nx / k2)
+    return torch.where(x<0, tanh_pos, tanh_neg)
+
 class JointPositionToLimitsAction(ActionTerm):
     """Joint position action term that scales the input actions to the joint limits and applies them to the
     articulation's joints.
@@ -44,6 +57,8 @@ class JointPositionToLimitsAction(ActionTerm):
     """The articulation asset on which the action term is applied."""
     _scale: torch.Tensor | float
     """The scaling factor applied to the input action."""
+    _offset: torch.Tensor | float
+    """The offset applied to the input action."""
 
     def __init__(self, cfg: actions_cfg.JointPositionToLimitsActionCfg, env: ManagerBasedEnv):
         # initialize the action term
@@ -77,6 +92,12 @@ class JointPositionToLimitsAction(ActionTerm):
         else:
             raise ValueError(f"Unsupported scale type: {type(cfg.scale)}. Supported types are float and dict.")
 
+        # parse offset
+        self._offset = self._asset.data.default_joint_pos[:, self._joint_ids].clone()
+        self.k1 = self._asset.data.joint_limits[:, self._joint_ids, 1]
+        self.k2 = -self._asset.data.joint_limits[:, self._joint_ids, 0]
+        self.x_shift = compute_tanh_shift(self.k1, self.k2, self._offset)
+
     """
     Properties.
     """
@@ -105,14 +126,7 @@ class JointPositionToLimitsAction(ActionTerm):
         # rescale the position targets if configured
         # this is useful when the input actions are in the range [-1, 1]
         if self.cfg.rescale_to_limits:
-            # clip to [-1, 1]
-            actions = self._processed_actions.clamp(-1.0, 1.0)
-            # rescale within the joint limits
-            actions = math_utils.unscale_transform(
-                actions,
-                self._asset.data.soft_joint_pos_limits[:, self._joint_ids, 0],
-                self._asset.data.soft_joint_pos_limits[:, self._joint_ids, 1],
-            )
+            actions = asymetric_tanh(self._processed_actions, self.k1, self.k2, self.x_shift)
             self._processed_actions[:] = actions[:]
 
     def apply_actions(self):
