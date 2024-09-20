@@ -12,6 +12,7 @@ import numpy as np
 import torch
 from collections.abc import Sequence
 from typing import Any, ClassVar
+import random
 
 from omni.isaac.version import get_version
 
@@ -155,6 +156,19 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
         Returns:
             A tuple containing the observations, rewards, resets (terminated and truncated) and extras.
         """
+        # Replay previous actions to simulate the delay.
+        num_replay = random.randint(0, 1)
+        if num_replay > 0:
+            for _ in range(num_replay):
+                self._sim_step_counter += 1
+                self.action_manager.apply_action()
+                # set actions into simulator
+                self.scene.write_data_to_sim()
+                # simulate
+                self.sim.step(render=False)
+                # update buffers at sim dt
+                self.scene.update(dt=self.physics_dt)
+
         # process actions
         self.action_manager.process_action(action)
 
@@ -163,7 +177,7 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
         is_rendering = self.sim.has_gui() or self.sim.has_rtx_sensors()
 
         # perform physics stepping
-        for _ in range(self.cfg.decimation):
+        for _ in range(self.cfg.decimation - num_replay):
             self._sim_step_counter += 1
             # set actions into buffers
             self.action_manager.apply_action()
