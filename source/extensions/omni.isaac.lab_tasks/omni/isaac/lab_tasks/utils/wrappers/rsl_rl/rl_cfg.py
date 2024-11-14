@@ -31,6 +31,11 @@ class RslRlPpoActorCriticCfg:
     critic_activation: str = MISSING
     """The activation function for the critic networks."""
 
+    rnn_type: str = "gru"
+    rnn_hidden_size: int = 256
+    rnn_num_layers: int = 1
+    """RNN parameters."""
+
 
 @configclass
 class RslRlPpoAlgorithmCfg:
