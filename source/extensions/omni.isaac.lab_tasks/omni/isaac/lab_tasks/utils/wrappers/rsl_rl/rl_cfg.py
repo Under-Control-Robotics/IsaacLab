@@ -31,6 +31,11 @@ class RslRlPpoActorCriticCfg:
     critic_activation: str = MISSING
     """The activation function for the critic networks."""
 
+    tcn_num_channels: int = MISSING
+    tcn_output_size: int = MISSING
+    tcn_window_size: int = MISSING
+    """TCN parameters."""
+
 
 @configclass
 class RslRlPpoAlgorithmCfg:
