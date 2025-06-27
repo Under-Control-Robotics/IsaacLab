@@ -97,6 +97,7 @@ def pyramid_stairs_terrain(
     terrain_center = [0.5 * cfg.size[0], 0.5 * cfg.size[1], 0.0]
     terrain_size = (cfg.size[0] - 2 * cfg.border_width, cfg.size[1] - 2 * cfg.border_width)
     # -- generate the stair pattern
+
     for k in range(num_steps):
         # check if we need to add holes around the steps
         if cfg.holes:
@@ -130,8 +131,70 @@ def pyramid_stairs_terrain(
         box_pos = (terrain_center[0] - terrain_size[0] / 2.0 + box_offset, terrain_center[1], box_z)
         box_left = trimesh.creation.box(box_dims, trimesh.transformations.translation_matrix(box_pos))
         # add the boxes to the list of meshes
-        meshes_list += [box_top, box_bottom, box_right, box_left]
+        # meshes_list += [box_top, box_bottom, box_right, box_left]
 
+
+        triangular_prism_height = terrain_size[0] + box_offset
+        # - 2 * box_offset is crrect size
+
+        triangle_2d_vertices = np.array([
+            [0.0, 0.0],           # Left corner
+            [step_height/2, 0.0],            # Right corner  
+            [0.0, -step_height/4]             # Top point
+        ])
+
+        # Define triangle face connectivity
+        triangle_faces = np.array([[0, 1, 2]])
+
+        # Position the triangular prism at the center of each stair level
+        prism_center_x = box_pos[0] - box_dims[0]/2
+        prism_center_y = box_pos[1] + box_dims[1]/2
+        prism_center_z = box_pos[2] + box_dims[2]/2
+
+        # Create the triangular prism
+        triangular_prism = trimesh.creation.extrude_triangulation(
+            vertices=triangle_2d_vertices,
+            faces=triangle_faces,
+            height=triangular_prism_height
+        )
+
+        # B: Rotate by 90 degrees and translate to correct position
+        rotation_transform = trimesh.transformations.rotation_matrix(
+            angle=np.pi/2,  # 90 degrees in radians
+            direction=[1, 0, 0],  # X-axis
+            point=[0, 0, 0]  # Rotate around origin
+        )
+        translation_transform = trimesh.transformations.translation_matrix([
+            prism_center_x, 
+            prism_center_y, 
+            prism_center_z
+        ])
+        combined_transform = np.dot(translation_transform, rotation_transform)
+
+        triangular_prism.apply_transform(combined_transform)
+
+        meshes_list.append(triangular_prism)
+
+        try:
+            # Subtract from top box
+            # box_top_subtracted = box_top.difference(triangular_prism)
+            # # Subtract from bottom box  
+            # box_bottom_subtracted = box_bottom.difference(triangular_prism)
+            # # Subtract from right box
+            # box_right_subtracted = box_right.difference(triangular_prism)
+            # Subtract from left box
+            box_left_subtracted = box_left.difference(triangular_prism)
+            
+            # Add the modified boxes to meshes list
+            meshes_list += [box_top, box_bottom, box_right, box_left_subtracted]
+            print("Subtraction success")
+            
+        except Exception as e:
+            # Fallback to original boxes if boolean operation fails
+            print(f"Boolean subtraction failed: {e}")
+            meshes_list += [box_top, box_bottom, box_right, box_left]
+
+        
     # generate final box for the middle of the terrain
     box_dims = (
         terrain_size[0] - 2 * num_steps * cfg.step_width,
