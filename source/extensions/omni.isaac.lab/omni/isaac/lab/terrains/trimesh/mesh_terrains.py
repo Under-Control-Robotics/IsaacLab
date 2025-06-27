@@ -207,6 +207,8 @@ def pyramid_stairs_terrain(
     # origin of the terrain
     origin = np.array([terrain_center[0], terrain_center[1], (num_steps + 1) * step_height])
 
+
+
     return meshes_list, origin
 
 
