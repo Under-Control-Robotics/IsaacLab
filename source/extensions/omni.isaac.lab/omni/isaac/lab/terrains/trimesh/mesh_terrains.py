@@ -92,6 +92,8 @@ def pyramid_stairs_terrain(
         # add the border meshes to the list of meshes
         meshes_list += make_borders
 
+    edge_height = step_height/4
+
     # generate the terrain
     # -- compute the position of the center of the terrain
     terrain_center = [0.5 * cfg.size[0], 0.5 * cfg.size[1], 0.0]
@@ -106,19 +108,22 @@ def pyramid_stairs_terrain(
             box_size = (terrain_size[0] - 2 * k * cfg.step_width, terrain_size[1] - 2 * k * cfg.step_width)
         # compute the quantities of the box
         # -- location
-        box_z = terrain_center[2] + k * step_height / 2.0
+
+
+        box_z = terrain_center[2] + k * step_height / 2.0 - edge_height
         box_offset = (k + 0.5) * cfg.step_width
         # -- dimensions
-        box_height = (k + 2) * step_height
+
+        box_height = (k + 2) * step_height - edge_height
         # generate the boxes
         # top/bottom
         box_dims = (box_size[0], cfg.step_width, box_height)
         # -- top
         box_pos = (terrain_center[0], terrain_center[1] + terrain_size[1] / 2.0 - box_offset, box_z)
-        box_top = trimesh.creation.box(box_dims, trimesh.transformations.translation_matrix(box_pos))
+        box_north = trimesh.creation.box(box_dims, trimesh.transformations.translation_matrix(box_pos))
         # -- bottom
         box_pos = (terrain_center[0], terrain_center[1] - terrain_size[1] / 2.0 + box_offset, box_z)
-        box_bottom = trimesh.creation.box(box_dims, trimesh.transformations.translation_matrix(box_pos))
+        box_south = trimesh.creation.box(box_dims, trimesh.transformations.translation_matrix(box_pos))
         # right/left
         if cfg.holes:
             box_dims = (cfg.step_width, box_size[1], box_height)
@@ -126,12 +131,39 @@ def pyramid_stairs_terrain(
             box_dims = (cfg.step_width, box_size[1] - 2 * cfg.step_width, box_height)
         # -- right
         box_pos = (terrain_center[0] + terrain_size[0] / 2.0 - box_offset, terrain_center[1], box_z)
-        box_right = trimesh.creation.box(box_dims, trimesh.transformations.translation_matrix(box_pos))
+        box_east = trimesh.creation.box(box_dims, trimesh.transformations.translation_matrix(box_pos))
         # -- left
         box_pos = (terrain_center[0] - terrain_size[0] / 2.0 + box_offset, terrain_center[1], box_z)
-        box_left = trimesh.creation.box(box_dims, trimesh.transformations.translation_matrix(box_pos))
+        box_west = trimesh.creation.box(box_dims, trimesh.transformations.translation_matrix(box_pos))
         # add the boxes to the list of meshes
-        # meshes_list += [box_top, box_bottom, box_right, box_left]
+        meshes_list += [box_north, box_south, box_east, box_west]
+
+
+        box_z+=box_height/2
+
+        # generate the boxes
+        # top/bottom
+        box_dims = (box_size[0] - 2 * edge_height, cfg.step_width, edge_height)
+        # -- top
+        box_top_pos = (terrain_center[0], terrain_center[1] + terrain_size[1] / 2.0 - box_offset - edge_height, box_z)
+        box_top_north = trimesh.creation.box(box_dims, trimesh.transformations.translation_matrix(box_top_pos))
+        # -- bottom
+        box_top_pos = (terrain_center[0], terrain_center[1] - terrain_size[1] / 2.0 + box_offset + edge_height, box_z)
+        box_top_south = trimesh.creation.box(box_dims, trimesh.transformations.translation_matrix(box_top_pos))
+        # right/left
+        if cfg.holes:
+            box_dims = (cfg.step_width, box_size[1], edge_height)
+        else:
+            box_dims = (cfg.step_width, box_size[1] - 2 * cfg.step_width, edge_height)
+        # -- right
+        box_top_pos = (terrain_center[0] + terrain_size[0] / 2.0 - box_offset - edge_height, terrain_center[1], box_z)
+        box_top_east = trimesh.creation.box(box_dims, trimesh.transformations.translation_matrix(box_top_pos))
+        # -- left
+        box_top_pos = (terrain_center[0] - terrain_size[0] / 2.0 + box_offset + edge_height, terrain_center[1], box_z)
+        box_top_west = trimesh.creation.box(box_dims, trimesh.transformations.translation_matrix(box_top_pos))
+
+        meshes_list += [box_top_north, box_top_south, box_top_east, box_top_west]
+
 
 
         triangular_prism_height = terrain_size[0] + box_offset
@@ -175,39 +207,31 @@ def pyramid_stairs_terrain(
 
         meshes_list.append(triangular_prism)
 
-        try:
-            # Subtract from top box
-            # box_top_subtracted = box_top.difference(triangular_prism)
-            # # Subtract from bottom box  
-            # box_bottom_subtracted = box_bottom.difference(triangular_prism)
-            # # Subtract from right box
-            # box_right_subtracted = box_right.difference(triangular_prism)
-            # Subtract from left box
-            box_left_subtracted = box_left.difference(triangular_prism)
-            
-            # Add the modified boxes to meshes list
-            meshes_list += [box_top, box_bottom, box_right, box_left_subtracted]
-            print("Subtraction success")
-            
-        except Exception as e:
-            # Fallback to original boxes if boolean operation fails
-            print(f"Boolean subtraction failed: {e}")
-            meshes_list += [box_top, box_bottom, box_right, box_left]
 
         
     # generate final box for the middle of the terrain
     box_dims = (
         terrain_size[0] - 2 * num_steps * cfg.step_width,
         terrain_size[1] - 2 * num_steps * cfg.step_width,
-        (num_steps + 2) * step_height,
+        (num_steps + 2) * step_height - edge_height,
     )
     box_pos = (terrain_center[0], terrain_center[1], terrain_center[2] + num_steps * step_height / 2)
     box_middle = trimesh.creation.box(box_dims, trimesh.transformations.translation_matrix(box_pos))
     meshes_list.append(box_middle)
+
+    box_dims = (
+        terrain_size[0] - 2 * num_steps * cfg.step_width - edge_height,
+        terrain_size[1] - 2 * num_steps * cfg.step_width - edge_height,
+        edge_height,
+    )
+
+    box_pos = (terrain_center[0], terrain_center[1], terrain_center[2] + num_steps * step_height / 2 + ((num_steps + 2) * step_height - edge_height)/2)
+
+    box_top_middle = trimesh.creation.box(box_dims, trimesh.transformations.translation_matrix(box_pos))
+    meshes_list.append(box_top_middle)
+
     # origin of the terrain
     origin = np.array([terrain_center[0], terrain_center[1], (num_steps + 1) * step_height])
-
-
 
     return meshes_list, origin
 
