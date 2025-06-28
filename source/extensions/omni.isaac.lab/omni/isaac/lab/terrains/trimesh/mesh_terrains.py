@@ -169,47 +169,60 @@ def pyramid_stairs_terrain(
         meshes_list += [box_top_north, box_top_south, box_top_east, box_top_west]
 
 
-
         triangular_prism_height = box_dims_EW[1] + 2*box_top_dims_NS[1] - 2*edge_depth
-        # - 2 * box_offset is crrect size
-
-        triangle_2d_vertices = np.array([
-            [0.0, 0.0],           # Left corner
-            [-edge_depth, 0.0],            # Right corner  
-            [0.0, edge_height/2]             # Top point
-        ])
-
-        # Define triangle face connectivity
         triangle_faces = np.array([[0, 1, 2]])
 
-        # Position the triangular prism at the center of each stair level
-        prism_center_x = box_top_west_pos[0] - (box_dims_EW[0]/2) 
-        prism_center_y = box_top_west_pos[1] + triangular_prism_height/2
-        prism_center_z = box_z
+        side_configs = [
+            # West
+            {
+                'box_pos': np.array(box_top_west_pos),
+                'offset': np.array([-box_dims_EW[0]/2, triangular_prism_height/2, 0]),
+                'vertices': np.array([[0.0, 0.0], [-edge_depth, 0.0], [0.0, edge_height/2]]),
+                'rotation': {'angle': np.pi/2, 'direction': [1, 0, 0]}
+            },
+            # South
+            {
+                'box_pos': np.array(box_top_south_pos),
+                'offset': np.array([-triangular_prism_height/2, -box_dims_NS[1]/2, 0]),
+                'vertices': np.array([[0.0, 0.0], [-edge_height/2, 0.0], [0.0, -edge_depth]]),
+                'rotation': {'angle': np.pi/2, 'direction': [0, 1, 0]}
+            },
+            # East
+            {
+                'box_pos': np.array(box_top_east_pos),
+                'offset': np.array([box_dims_EW[0]/2, triangular_prism_height/2, 0]),
+                'vertices': np.array([[0.0, 0.0], [edge_height/2, 0.0], [0.0, edge_depth]]),
+                'rotation': {'angle': np.pi/2, 'direction': [1, 0, 0]}
+            },
+            # North
+            {
+                'box_pos': np.array(box_top_north_pos),
+                'offset': np.array([triangular_prism_height/2, box_dims_NS[1]/2, 0]),
+                'vertices': np.array([[0.0, 0.0], [edge_height/2, 0.0], [0.0, edge_depth]]),
+                'rotation': {'angle': -np.pi/2, 'direction': [0, 1, 0]}
+            }
+        ]
 
-        # Create the triangular prism
-        triangular_prism = trimesh.creation.extrude_triangulation(
-            vertices=triangle_2d_vertices,
-            faces=triangle_faces,
-            height=triangular_prism_height
-        )
+        for config in side_configs:
+            prism_center = config['box_pos'] + config['offset']
 
-        # B: Rotate by 90 degrees and translate to correct position
-        rotation_transform = trimesh.transformations.rotation_matrix(
-            angle=np.pi/2,  # 90 degrees in radians
-            direction=[1, 0, 0],  # X-axis
-            point=[0, 0, 0]  # Rotate around origin
-        )
-        translation_transform = trimesh.transformations.translation_matrix([
-            prism_center_x, 
-            prism_center_y, 
-            prism_center_z
-        ])
-        combined_transform = np.dot(translation_transform, rotation_transform)
-
-        triangular_prism.apply_transform(combined_transform)
-
-        meshes_list.append(triangular_prism)
+            triangular_prism = trimesh.creation.extrude_triangulation(
+                vertices=config['vertices'],
+                faces=triangle_faces,
+                height=triangular_prism_height
+            )
+            
+            # Apply rotation and translation
+            rotation_transform = trimesh.transformations.rotation_matrix(
+                angle=config['rotation']['angle'],
+                direction=config['rotation']['direction'],
+                point=[0, 0, 0]
+            )
+            translation_transform = trimesh.transformations.translation_matrix(prism_center)
+            combined_transform = np.dot(translation_transform, rotation_transform)
+            
+            triangular_prism.apply_transform(combined_transform)
+            meshes_list.append(triangular_prism)
 
 
         
@@ -234,47 +247,60 @@ def pyramid_stairs_terrain(
     box_top_middle = trimesh.creation.box(middle_box_top_dims, trimesh.transformations.translation_matrix(middle_box_top_pos))
     meshes_list.append(box_top_middle)
 
-
+    # west triangle
     middle_triangular_prism_height = middle_box_top_dims[0]
-    # - 2 * box_offset is crrect size
-
-    triangle_2d_vertices = np.array([
-        [0.0, 0.0],           # Left corner
-        [-edge_depth, 0.0],            # Right corner  
-        [0.0, edge_height/2]             # Top point
-    ])
-
     # Define triangle face connectivity
     triangle_faces = np.array([[0, 1, 2]])
 
     # Position the triangular prism at the center of each stair level
-    prism_center_x = middle_box_top_pos[0] - (middle_box_top_dims[0]/2) 
-    prism_center_y = middle_box_top_pos[1] + middle_triangular_prism_height/2
-    prism_center_z = middle_box_top_pos[2]
 
-    # Create the triangular prism
-    triangular_prism = trimesh.creation.extrude_triangulation(
-        vertices=triangle_2d_vertices,
-        faces=triangle_faces,
-        height=middle_triangular_prism_height
-    )
+    side_configs = [
+        # West
+        {
+            'offset': np.array([-middle_box_top_dims[0]/2, middle_triangular_prism_height/2, 0]),
+            'vertices': np.array([[0.0, 0.0], [-edge_depth, 0.0], [0.0, edge_height/2]]),
+            'rotation': {'angle': np.pi/2, 'direction': [1, 0, 0]}
+        },
+        # South
+        {
+            'offset': np.array([-middle_triangular_prism_height/2, -middle_box_top_dims[1]/2, 0]),
+            'vertices': np.array([[0.0, 0.0], [-edge_height/2, 0.0], [0.0, -edge_depth]]),
+            'rotation': {'angle': np.pi/2, 'direction': [0, 1, 0]}
+        },
+        # East
+        {
+            'offset': np.array([middle_box_top_dims[0]/2, middle_triangular_prism_height/2, 0]),
+            'vertices': np.array([[0.0, 0.0], [edge_height/2, 0.0], [0.0, edge_depth]]),
+            'rotation': {'angle': np.pi/2, 'direction': [1, 0, 0]}
+        },
+        # North
+        {
+            'offset': np.array([middle_triangular_prism_height/2, middle_box_top_dims[0]/2, 0]),
+            'vertices': np.array([[0.0, 0.0], [edge_height/2, 0.0], [0.0, edge_depth]]),
+            'rotation': {'angle': -np.pi/2, 'direction': [0, 1, 0]}
+        }
+    ]
 
-    # B: Rotate by 90 degrees and translate to correct position
-    rotation_transform = trimesh.transformations.rotation_matrix(
-        angle=np.pi/2,  # 90 degrees in radians
-        direction=[1, 0, 0],  # X-axis
-        point=[0, 0, 0]  # Rotate around origin
-    )
-    translation_transform = trimesh.transformations.translation_matrix([
-        prism_center_x, 
-        prism_center_y, 
-        prism_center_z
-    ])
-    combined_transform = np.dot(translation_transform, rotation_transform)
+    for config in side_configs:
+        prism_center = np.array(middle_box_top_pos) + config['offset']
 
-    triangular_prism.apply_transform(combined_transform)
-
-    meshes_list.append(triangular_prism)
+        triangular_prism = trimesh.creation.extrude_triangulation(
+            vertices=config['vertices'],
+            faces=triangle_faces,
+            height=middle_triangular_prism_height
+        )
+        
+        # Apply rotation and translation
+        rotation_transform = trimesh.transformations.rotation_matrix(
+            angle=config['rotation']['angle'],
+            direction=config['rotation']['direction'],
+            point=[0, 0, 0]
+        )
+        translation_transform = trimesh.transformations.translation_matrix(prism_center)
+        combined_transform = np.dot(translation_transform, rotation_transform)
+        
+        triangular_prism.apply_transform(combined_transform)
+        meshes_list.append(triangular_prism)
 
     # origin of the terrain
     origin = np.array([terrain_center[0], terrain_center[1], (num_steps + 1) * step_height])
