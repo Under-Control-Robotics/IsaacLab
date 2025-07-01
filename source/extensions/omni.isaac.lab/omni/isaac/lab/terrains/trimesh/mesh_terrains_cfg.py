@@ -49,6 +49,10 @@ class MeshPyramidStairsTerrainCfg(SubTerrainBaseCfg):
     no border will be added.
     """
 
+    edge_height_range: tuple[float, float] = MISSING
+
+    edge_depth_range: tuple[float, float] = MISSING
+
 
 @configclass
 class MeshInvertedPyramidStairsTerrainCfg(MeshPyramidStairsTerrainCfg):
