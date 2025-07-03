@@ -190,7 +190,7 @@ def pyramid_stairs_terrain(
             {
                 'box_pos': np.array(box_top_east_pos),
                 'offset': np.array([box_dims_EW[0]/2, triangular_prism_height/2, 0]),
-                'vertices': np.array([[0.0, 0.0], [edge_height/2, 0.0], [0.0, edge_depth]]),
+                'vertices': np.array([[0.0, 0.0], [edge_depth, 0.0], [0.0, edge_height/2]]),
                 'rotation': {'angle': np.pi/2, 'direction': [1, 0, 0]}
             },
             # North
@@ -269,7 +269,7 @@ def pyramid_stairs_terrain(
         # East
         {
             'offset': np.array([middle_box_top_dims[0]/2, middle_triangular_prism_height/2, 0]),
-            'vertices': np.array([[0.0, 0.0], [edge_height/2, 0.0], [0.0, edge_depth]]),
+            'vertices': np.array([[0.0, 0.0], [edge_depth, 0.0], [0.0, edge_height/2]]),
             'rotation': {'angle': np.pi/2, 'direction': [1, 0, 0]}
         },
         # North
