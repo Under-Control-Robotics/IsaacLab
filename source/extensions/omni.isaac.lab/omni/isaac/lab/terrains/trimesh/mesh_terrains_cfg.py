@@ -51,7 +51,9 @@ class MeshPyramidStairsTerrainCfg(SubTerrainBaseCfg):
 
     edge_height_range: tuple[float, float] = MISSING
 
-    edge_depth: float = MISSING
+    edge_depth: tuple[float, float] = MISSING
+
+    # edge_depth: float = MISSING
 
 
 @configclass

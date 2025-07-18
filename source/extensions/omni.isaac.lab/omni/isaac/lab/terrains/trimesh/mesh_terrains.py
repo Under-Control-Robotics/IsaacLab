@@ -19,6 +19,8 @@ from .utils import make_border, make_plane
 if TYPE_CHECKING:
     from . import mesh_terrains_cfg
 
+import random
+
 
 def flat_terrain(
     difficulty: float, cfg: mesh_terrains_cfg.MeshPlaneTerrainCfg
@@ -92,8 +94,10 @@ def pyramid_stairs_terrain(
         # add the border meshes to the list of meshes
         meshes_list += make_borders
 
-    edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
-    edge_depth = cfg.edge_depth
+    # edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
+    # edge_depth = cfg.edge_depth
+
+
 
     # generate the terrain
     # -- compute the position of the center of the terrain
@@ -110,9 +114,8 @@ def pyramid_stairs_terrain(
         # compute the quantities of the box
         # -- location
 
-
-
-
+        edge_height = round(random.uniform(cfg.edge_height_range[0], cfg.edge_height_range[1] ), 3)
+        edge_depth = round(random.uniform(cfg.edge_depth[0], cfg.edge_depth[1] ), 3)
         
         box_offset = (k + 0.5) * cfg.step_width
 
@@ -368,8 +371,11 @@ def inverted_pyramid_stairs_terrain(
     terrain_size = (cfg.size[0] - 2 * cfg.border_width, cfg.size[1] - 2 * cfg.border_width)
     # -- generate the stair pattern
 
-    edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
-    edge_depth = cfg.edge_depth
+    # edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
+    # edge_depth = cfg.edge_depth
+
+    edge_height = round(random.uniform(cfg.edge_height_range[0], cfg.edge_height_range[1] ), 3)
+    edge_depth = round(random.uniform(cfg.edge_depth[0], cfg.edge_depth[1] ), 3)
 
     # print("step_height: ", step_height)
     # print("edge_height: ", edge_height)
@@ -483,6 +489,9 @@ def inverted_pyramid_stairs_terrain(
         else:
             box_size = (terrain_size[0] - 2 * k * cfg.step_width, terrain_size[1] - 2 * k * cfg.step_width)
         # compute the quantities of the box
+
+        edge_height = round(random.uniform(cfg.edge_height_range[0], cfg.edge_height_range[1] ), 3)
+        edge_depth = round(random.uniform(cfg.edge_depth[0], cfg.edge_depth[1] ), 3)
 
 
         # B: Bottom layer boxes
