@@ -21,6 +21,63 @@ if TYPE_CHECKING:
 
 import random
 
+# Use HfRandomUniformTerrainCfg approach for surface generation
+def _create_hf_random_surface(box_dims, box_pos, noise_range=(0.002, 0.005), resolution=20):
+    """Create rough surface using heightfield approach similar to HfRandomUniformTerrainCfg"""
+    width, length = box_dims[0], box_dims[1]
+    
+    # Parameters similar to HfRandomUniformTerrainCfg
+    vertical_scale = 0.01  # Fine height resolution
+    noise_step = 0.01
+    
+    # Convert to discrete units (similar to hf_terrains.py)
+    width_pixels = int(resolution)
+    length_pixels = int(resolution)
+    
+    # Height range in discrete units
+    height_min = int(noise_range[0] / vertical_scale)
+    height_max = int(noise_range[1] / vertical_scale)
+    height_step_discrete = int(noise_step / vertical_scale)
+    
+    # Create range of possible heights
+    height_range = np.arange(height_min, height_max + height_step_discrete, height_step_discrete)
+    
+    # Sample heights randomly from the range (core HfRandomUniformTerrainCfg logic)
+    height_field = np.random.choice(height_range, size=(width_pixels, length_pixels))
+    
+    # Convert back to real heights
+    height_field_real = height_field.astype(np.float32) * vertical_scale
+    
+    # Create mesh vertices from heightfield
+    x = np.linspace(-width/2, width/2, width_pixels)
+    y = np.linspace(-length/2, length/2, length_pixels)
+    X, Y = np.meshgrid(x, y)
+
+    
+    # Flatten and create vertices
+    vertices = np.column_stack([
+        X.flatten(), 
+        Y.flatten(), 
+        height_field_real.flatten()
+    ])
+    
+    # Translate to box position
+    vertices += np.array(box_pos)
+    
+    # Create triangular faces for the grid
+    faces = []
+    for i in range(width_pixels - 1):
+        for j in range(length_pixels - 1):
+            # Two triangles per grid cell
+            v0 = i * length_pixels + j
+            v1 = i * length_pixels + (j + 1)
+            v2 = (i + 1) * length_pixels + j
+            v3 = (i + 1) * length_pixels + (j + 1)
+            
+            faces.append([v0, v1, v2])
+            faces.append([v1, v3, v2])
+    
+    return trimesh.Trimesh(vertices=vertices, faces=np.array(faces))
 
 def flat_terrain(
     difficulty: float, cfg: mesh_terrains_cfg.MeshPlaneTerrainCfg
@@ -179,6 +236,15 @@ def pyramid_stairs_terrain(
 
         meshes_list += [box_top_north, box_top_south, box_top_east, box_top_west]
 
+        level_dims = [box_top_dims_NS[0], box_top_dims_NS[0]]
+        level_center = [terrain_center[0], terrain_center[1], box_top_north_pos[2]]
+
+        resolution = round(level_dims[0] * 30 / (terrain_size[0] - 2 * num_steps * cfg.step_width - 2*edge_depth))
+
+        rough_surface_level = _create_hf_random_surface(level_dims, level_center, noise_range=(0, 0.02), resolution=resolution)
+
+        meshes_list.append(rough_surface_level)
+
 
         triangular_prism_height = box_dims_EW[1] + 2*box_top_dims_NS[1] - 2*edge_depth
         triangle_faces = np.array([[0, 1, 2]])
@@ -255,8 +321,18 @@ def pyramid_stairs_terrain(
 
     middle_box_top_pos = (terrain_center[0], terrain_center[1], terrain_center[2] + (num_steps * step_height) + (step_height-edge_height) + edge_height/2)
 
-    box_top_middle = trimesh.creation.box(middle_box_top_dims, trimesh.transformations.translation_matrix(middle_box_top_pos))
+    box_top_middle = trimesh.creation.box(middle_box_top_dims, trimesh.transformations.translation_matrix(middle_box_top_pos))    
     meshes_list.append(box_top_middle)
+
+    rough_surface = _create_hf_random_surface(
+        middle_box_top_dims[:2], 
+        middle_box_top_pos,
+        noise_range=(0, 0.02),
+        resolution=30  # Higher resolution = more detailed surface
+    )
+
+    meshes_list.append(rough_surface)
+    
 
     # Top triangle height
     middle_triangular_prism_height = middle_box_top_dims[0]
@@ -567,6 +643,16 @@ def inverted_pyramid_stairs_terrain(
         meshes_list += [box_top_north, box_top_south, box_top_east, box_top_west]
 
         triangular_prism_height = box_dims_EW[1] + 2*box_dims_NS[1] - 2*edge_depth
+
+
+        # level_dims = [box_top_dims_NS[0], box_top_dims_NS[0]]
+        # level_center = [terrain_center[0], terrain_center[1], box_top_north_pos[2]]
+
+        # resolution = round(level_dims[0] * 30 / (terrain_size[0] - 2 * num_steps * cfg.step_width - 2*edge_depth))
+
+        # rough_surface_level = _create_hf_random_surface(level_dims, level_center, noise_range=(0, 0.02), resolution=resolution)
+
+        # meshes_list.append(rough_surface_level)
 
         side_configs = [
             # West
