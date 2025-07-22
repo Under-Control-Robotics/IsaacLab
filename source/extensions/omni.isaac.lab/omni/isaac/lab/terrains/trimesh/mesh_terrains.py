@@ -236,14 +236,14 @@ def pyramid_stairs_terrain(
 
         meshes_list += [box_top_north, box_top_south, box_top_east, box_top_west]
 
-        level_dims = [box_top_dims_NS[0], box_top_dims_NS[0]]
-        level_center = [terrain_center[0], terrain_center[1], box_top_north_pos[2]]
+        # level_dims = [box_top_dims_NS[0], box_top_dims_NS[0]]
+        # level_center = [terrain_center[0], terrain_center[1], box_top_north_pos[2]]
 
-        resolution = round(level_dims[0] * 30 / (terrain_size[0] - 2 * num_steps * cfg.step_width - 2*edge_depth))
+        # resolution = round(level_dims[0] * 30 / (terrain_size[0] - 2 * num_steps * cfg.step_width - 2*edge_depth))
 
-        rough_surface_level = _create_hf_random_surface(level_dims, level_center, noise_range=(0, 0.02), resolution=resolution)
+        # rough_surface_level = _create_hf_random_surface(level_dims, level_center, noise_range=(0, 0.02), resolution=resolution)
 
-        meshes_list.append(rough_surface_level)
+        # meshes_list.append(rough_surface_level)
 
 
         triangular_prism_height = box_dims_EW[1] + 2*box_top_dims_NS[1] - 2*edge_depth
@@ -598,7 +598,7 @@ def inverted_pyramid_stairs_terrain(
         # box_offset = (k + 0.5) * cfg.step_width + edge_depth
         # -- dimensions
 
-        print("box base depth: ", box_base_depth)
+        # print("box base depth: ", box_base_depth)
 
         # generate the boxes
         # top/bottom
