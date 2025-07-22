@@ -324,14 +324,15 @@ def pyramid_stairs_terrain(
     box_top_middle = trimesh.creation.box(middle_box_top_dims, trimesh.transformations.translation_matrix(middle_box_top_pos))    
     meshes_list.append(box_top_middle)
 
-    rough_surface = _create_hf_random_surface(
-        middle_box_top_dims[:2], 
-        middle_box_top_pos,
-        noise_range=(0, 0.02),
-        resolution=30  # Higher resolution = more detailed surface
-    )
+    # Adding Rough Surface
+    # rough_surface = _create_hf_random_surface(
+    #     middle_box_top_dims[:2], 
+    #     middle_box_top_pos,
+    #     noise_range=(0, 0.02),
+    #     resolution=30  # Higher resolution = more detailed surface
+    # )
 
-    meshes_list.append(rough_surface)
+    # meshes_list.append(rough_surface)
     
 
     # Top triangle height
@@ -450,8 +451,10 @@ def inverted_pyramid_stairs_terrain(
     # edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
     # edge_depth = cfg.edge_depth
 
-    edge_height = round(random.uniform(cfg.edge_height_range[0], cfg.edge_height_range[1] ), 3)
-    edge_depth = round(random.uniform(cfg.edge_depth[0], cfg.edge_depth[1] ), 3)
+    edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
+    edge_depth = cfg.edge_depth[0] + difficulty * (cfg.edge_depth[1] - cfg.edge_depth[0])
+    # edge_height = round(random.uniform(cfg.edge_height_range[0], cfg.edge_height_range[1] ), 3)
+    # edge_depth = round(random.uniform(cfg.edge_depth[0], cfg.edge_depth[1] ), 3)
 
     # print("step_height: ", step_height)
     # print("edge_height: ", edge_height)
@@ -566,20 +569,24 @@ def inverted_pyramid_stairs_terrain(
             box_size = (terrain_size[0] - 2 * k * cfg.step_width, terrain_size[1] - 2 * k * cfg.step_width)
         # compute the quantities of the box
 
-        edge_height = round(random.uniform(cfg.edge_height_range[0], cfg.edge_height_range[1] ), 3)
-        edge_depth = round(random.uniform(cfg.edge_depth[0], cfg.edge_depth[1] ), 3)
+        edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
+        edge_depth = cfg.edge_depth[0] + difficulty * (cfg.edge_depth[1] - cfg.edge_depth[0])
+        # edge_height = round(random.uniform(cfg.edge_height_range[0], cfg.edge_height_range[1] ), 3)
+        # edge_depth = round(random.uniform(cfg.edge_depth[0], cfg.edge_depth[1] ), 3)
 
 
         # B: Bottom layer boxes
         # -- location
         box_base_height = step_height - edge_height
+
         box_base_depth = cfg.step_width
         box_base_NS_length = box_size[0] + 2*edge_depth
         box_base_EW_length = box_size[1] - 2 * cfg.step_width
         box_base_z_dist = terrain_center[2] - (k+1) * step_height - edge_height - (step_height-edge_height)/2
         box_base_x_dist = terrain_size[0]/2 - edge_depth - k*cfg.step_width - cfg.step_width/2
         box_base_y_dist = terrain_size[1]/2 - edge_depth - k*cfg.step_width - cfg.step_width/2
-        
+
+
         box_top_depth = cfg.step_width - edge_depth
         box_top_NS_length = box_size[0] + 2 * edge_depth
         box_top_EW_length = box_size[1] - 2 * cfg.step_width + 2*edge_depth
@@ -590,6 +597,8 @@ def inverted_pyramid_stairs_terrain(
         # box_z = terrain_center[2] - (k + 1) * step_height - edge_height - (step_height-edge_height)/2
         # box_offset = (k + 0.5) * cfg.step_width + edge_depth
         # -- dimensions
+
+        print("box base depth: ", box_base_depth)
 
         # generate the boxes
         # top/bottom
@@ -607,6 +616,8 @@ def inverted_pyramid_stairs_terrain(
             box_dims_EW = (box_base_depth, box_base_EW_length, box_base_height)
         # -- right
         box_east_pos = (terrain_center[0] + box_base_x_dist, terrain_center[1], box_base_z_dist)
+        # if k == 0:
+        #     box_east_pos = (terrain_center[0] + box_base_x_dist + wall_depth/2, terrain_center[1], box_base_z_dist)
         box_east = trimesh.creation.box(box_dims_EW, trimesh.transformations.translation_matrix(box_east_pos))
         # -- left
         box_west_pos = (terrain_center[0] - box_base_x_dist, terrain_center[1], box_base_z_dist)
