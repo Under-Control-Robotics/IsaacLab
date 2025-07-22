@@ -451,10 +451,10 @@ def inverted_pyramid_stairs_terrain(
     # edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
     # edge_depth = cfg.edge_depth
 
-    edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
-    edge_depth = cfg.edge_depth[0] + difficulty * (cfg.edge_depth[1] - cfg.edge_depth[0])
-    # edge_height = round(random.uniform(cfg.edge_height_range[0], cfg.edge_height_range[1] ), 3)
-    # edge_depth = round(random.uniform(cfg.edge_depth[0], cfg.edge_depth[1] ), 3)
+    # edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
+    # edge_depth = cfg.edge_depth[0] + difficulty * (cfg.edge_depth[1] - cfg.edge_depth[0])
+    edge_height = round(random.uniform(cfg.edge_height_range[0], cfg.edge_height_range[1] ), 3)
+    edge_depth = round(random.uniform(cfg.edge_depth[0], cfg.edge_depth[1] ), 3)
 
     # print("step_height: ", step_height)
     # print("edge_height: ", edge_height)
@@ -574,6 +574,8 @@ def inverted_pyramid_stairs_terrain(
         # edge_height = round(random.uniform(cfg.edge_height_range[0], cfg.edge_height_range[1] ), 3)
         # edge_depth = round(random.uniform(cfg.edge_depth[0], cfg.edge_depth[1] ), 3)
 
+        # print("edge height: ", edge_height)
+
 
         # B: Bottom layer boxes
         # -- location
@@ -582,16 +584,16 @@ def inverted_pyramid_stairs_terrain(
         box_base_depth = cfg.step_width
         box_base_NS_length = box_size[0] + 2*edge_depth
         box_base_EW_length = box_size[1] - 2 * cfg.step_width
+        box_base_x_dist = terrain_size[0]/2 - wall_depth - k*cfg.step_width - cfg.step_width/2
+        box_base_y_dist = terrain_size[1]/2 - wall_depth - k*cfg.step_width - cfg.step_width/2
         box_base_z_dist = terrain_center[2] - (k+1) * step_height - edge_height - (step_height-edge_height)/2
-        box_base_x_dist = terrain_size[0]/2 - edge_depth - k*cfg.step_width - cfg.step_width/2
-        box_base_y_dist = terrain_size[1]/2 - edge_depth - k*cfg.step_width - cfg.step_width/2
 
 
         box_top_depth = cfg.step_width - edge_depth
         box_top_NS_length = box_size[0] + 2 * edge_depth
         box_top_EW_length = box_size[1] - 2 * cfg.step_width + 2*edge_depth
-        box_top_x_dist = terrain_size[0]/2 - edge_depth - k*cfg.step_width - (cfg.step_width - edge_depth)/2
-        box_top_y_dist = terrain_size[1]/2 - edge_depth - k*cfg.step_width - (cfg.step_width - edge_depth)/2
+        box_top_x_dist = terrain_size[0]/2 - wall_depth - k*cfg.step_width - (cfg.step_width - edge_depth)/2
+        box_top_y_dist = terrain_size[1]/2 - wall_depth - k*cfg.step_width - (cfg.step_width - edge_depth)/2
         box_top_z_dist = terrain_center[2] - (k+1) * step_height - edge_height/2
 
         # box_z = terrain_center[2] - (k + 1) * step_height - edge_height - (step_height-edge_height)/2
