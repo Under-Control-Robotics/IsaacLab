@@ -79,6 +79,156 @@ def _create_hf_random_surface(box_dims, box_pos, noise_range=(0.002, 0.005), res
     
     return trimesh.Trimesh(vertices=vertices, faces=np.array(faces))
 
+def _create_triangle_edge(box_dims_NS, box_dims_EW, box_top_dims_NS, box_top_west_pos, box_top_south_pos, box_top_east_pos, box_top_north_pos,
+                        edge_depth, edge_height):
+    triangular_prism_height = box_dims_EW[1] + 2*box_top_dims_NS[1] - 2*edge_depth
+    triangle_faces = np.array([[0, 1, 2]])
+
+    side_configs = [
+        # West
+        {
+            'box_pos': np.array(box_top_west_pos),
+            'offset': np.array([-box_dims_EW[0]/2, triangular_prism_height/2, -edge_height/2]),
+            'vertices': np.array([[0.0, 0.0], [-edge_depth, 0.0], [0.0, edge_height]]),
+            'rotation': {'angle': np.pi/2, 'direction': [1, 0, 0]}
+        },
+        # South
+        {
+            'box_pos': np.array(box_top_south_pos),
+            'offset': np.array([-triangular_prism_height/2, -box_dims_NS[1]/2, -edge_height/2]),
+            'vertices': np.array([[0.0, 0.0], [-edge_height, 0.0], [0.0, -edge_depth]]),
+            'rotation': {'angle': np.pi/2, 'direction': [0, 1, 0]}
+        },
+        # East
+        {
+            'box_pos': np.array(box_top_east_pos),
+            'offset': np.array([box_dims_EW[0]/2, triangular_prism_height/2, -edge_height/2]),
+            'vertices': np.array([[0.0, 0.0], [edge_depth, 0.0], [0.0, edge_height]]),
+            'rotation': {'angle': np.pi/2, 'direction': [1, 0, 0]}
+        },
+        # North
+        {
+            'box_pos': np.array(box_top_north_pos),
+            'offset': np.array([triangular_prism_height/2, box_dims_NS[1]/2, -edge_height/2]),
+            'vertices': np.array([[0.0, 0.0], [edge_height, 0.0], [0.0, edge_depth]]),
+            'rotation': {'angle': -np.pi/2, 'direction': [0, 1, 0]}
+        }
+    ]
+
+    transform_list = list()
+
+    for config in side_configs:
+        prism_center = config['box_pos'] + config['offset']
+
+        triangular_prism = trimesh.creation.extrude_triangulation(
+            vertices=config['vertices'],
+            faces=triangle_faces,
+            height=triangular_prism_height
+        )
+        
+        # Apply rotation and translation
+        rotation_transform = trimesh.transformations.rotation_matrix(
+            angle=config['rotation']['angle'],
+            direction=config['rotation']['direction'],
+            point=[0, 0, 0]
+        )
+        translation_transform = trimesh.transformations.translation_matrix(prism_center)
+        combined_transform = np.dot(translation_transform, rotation_transform)
+        
+        triangular_prism.apply_transform(combined_transform)
+        transform_list.append(triangular_prism)
+    
+    return transform_list
+
+def _create_triangle_edge_inv(box_dims_NS, box_dims_EW, box_top_depth, box_top_west_pos, box_top_south_pos, box_top_east_pos, box_top_north_pos,
+                        edge_depth, edge_height, triangle_faces):
+    
+    triangular_prism_height = box_dims_EW[1] + 2*box_dims_NS[1] - 2*edge_depth
+
+    side_configs = [
+        # West
+        {
+            # Array behind box pos cancels 
+            'box_pos': np.array(box_top_west_pos),
+            'offset': np.array([box_top_depth/2, triangular_prism_height/2, -edge_height/2]),
+            'vertices': np.array([[0.0, 0.0], [edge_depth, 0.0], [0.0, edge_height]]),
+            'rotation': {'angle': np.pi/2, 'direction': [1, 0, 0]}
+        },
+        # South
+        {
+            'box_pos': np.array(box_top_south_pos),
+            'offset': np.array([-triangular_prism_height/2, box_top_depth/2, -edge_height/2]),
+            'vertices': np.array([[0.0, 0.0], [-edge_height, 0.0], [0.0, edge_depth]]),
+            'rotation': {'angle': np.pi/2, 'direction': [0, 1, 0]}
+        },
+        # East
+        {
+            'box_pos': np.array(box_top_east_pos),
+            'offset': np.array([-box_top_depth/2, triangular_prism_height/2, -edge_height/2]),
+            'vertices': np.array([[0.0, 0.0], [-edge_depth, 0.0], [0.0, edge_height]]),
+            'rotation': {'angle': np.pi/2, 'direction': [1, 0, 0]}
+        },
+        # North
+        {
+            'box_pos': np.array(box_top_north_pos),
+            'offset': np.array([triangular_prism_height/2, -box_top_depth/2, -edge_height/2]),
+            'vertices': np.array([[0.0, 0.0], [edge_height, 0.0], [0.0, -edge_depth]]),
+            'rotation': {'angle': -np.pi/2, 'direction': [0, 1, 0]}
+        }
+    ]
+
+    transform_list = list()
+
+    for config in side_configs:
+        prism_center = config['box_pos'] + config['offset']
+
+        triangular_prism = trimesh.creation.extrude_triangulation(
+            vertices=config['vertices'],
+            faces=triangle_faces,
+            height=triangular_prism_height
+        )
+        
+        # Apply rotation and translation
+        rotation_transform = trimesh.transformations.rotation_matrix(
+            angle=config['rotation']['angle'],
+            direction=config['rotation']['direction'],
+            point=[0, 0, 0]
+        )
+        translation_transform = trimesh.transformations.translation_matrix(prism_center)
+        combined_transform = np.dot(translation_transform, rotation_transform)
+        
+        triangular_prism.apply_transform(combined_transform)
+        transform_list.append(triangular_prism)
+
+    return transform_list
+
+def _create_cylinder_edge(cylinder_height, edge_height, cylinder_configs):
+
+    cylinder_list = list()
+
+    for config in cylinder_configs:
+        cylinder_pos = config['pos']
+
+        cylinder = trimesh.creation.cylinder(
+            radius=edge_height,
+            height=cylinder_height,
+            sections=32  # Number of sides for the cylinder
+        )
+
+        rotation_matrix = trimesh.transformations.rotation_matrix(
+            config['rotation_x']['angle'], config['rotation_x']['axis']
+        ) @ trimesh.transformations.rotation_matrix(
+            config['rotation_y']['angle'], config['rotation_y']['axis']
+        )
+        
+        cylinder.apply_transform(rotation_matrix)
+        translation_north = trimesh.transformations.translation_matrix(cylinder_pos)
+        cylinder.apply_transform(translation_north)
+        
+        cylinder_list.append(cylinder)
+    
+    return cylinder_list
+
 def flat_terrain(
     difficulty: float, cfg: mesh_terrains_cfg.MeshPlaneTerrainCfg
 ) -> tuple[list[trimesh.Trimesh], np.ndarray]:
@@ -154,6 +304,9 @@ def pyramid_stairs_terrain(
     # edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
     # edge_depth = cfg.edge_depth
 
+    edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
+    edge_depth = cfg.edge_depth[0] + difficulty * (cfg.edge_depth[1] - cfg.edge_depth[0])
+
 
 
     # generate the terrain
@@ -171,8 +324,10 @@ def pyramid_stairs_terrain(
         # compute the quantities of the box
         # -- location
 
-        edge_height = round(random.uniform(cfg.edge_height_range[0], cfg.edge_height_range[1] ), 3)
-        edge_depth = round(random.uniform(cfg.edge_depth[0], cfg.edge_depth[1] ), 3)
+        # edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
+        # edge_depth = cfg.edge_depth[0] + difficulty * (cfg.edge_depth[1] - cfg.edge_depth[0])
+        # edge_height = round(random.uniform(cfg.edge_height_range[0], cfg.edge_height_range[1] ), 3)
+        # edge_depth = round(random.uniform(cfg.edge_depth[0], cfg.edge_depth[1] ), 3)
         
         box_offset = (k + 0.5) * cfg.step_width
 
@@ -236,71 +391,103 @@ def pyramid_stairs_terrain(
 
         meshes_list += [box_top_north, box_top_south, box_top_east, box_top_west]
 
-        # level_dims = [box_top_dims_NS[0], box_top_dims_NS[0]]
-        # level_center = [terrain_center[0], terrain_center[1], box_top_north_pos[2]]
+        level_dims = [box_top_dims_NS[0], box_top_dims_NS[0]]
+        level_center = [terrain_center[0], terrain_center[1], box_top_north_pos[2]]
 
-        # resolution = round(level_dims[0] * 30 / (terrain_size[0] - 2 * num_steps * cfg.step_width - 2*edge_depth))
+        resolution = round(level_dims[0] * 30 / (terrain_size[0] - 2 * num_steps * cfg.step_width - 2*edge_depth))
 
-        # rough_surface_level = _create_hf_random_surface(level_dims, level_center, noise_range=(0, 0.02), resolution=resolution)
+        rough_surface_level = _create_hf_random_surface(level_dims, level_center, noise_range=(0, 0.07), resolution=resolution)
 
         # meshes_list.append(rough_surface_level)
 
+        # meshes_list += _create_triangle_edge(
+        #     box_dims_NS, box_dims_EW, box_top_dims_NS, box_top_west_pos, box_top_south_pos,
+        #     box_top_east_pos, box_top_north_pos, edge_depth, edge_height
+        # )
 
-        triangular_prism_height = box_dims_EW[1] + 2*box_top_dims_NS[1] - 2*edge_depth
-        triangle_faces = np.array([[0, 1, 2]])
-
-        side_configs = [
-            # West
+        cylinder_configs = [
+            # North
             {
-                'box_pos': np.array(box_top_west_pos),
-                'offset': np.array([-box_dims_EW[0]/2, triangular_prism_height/2, -edge_height/2]),
-                'vertices': np.array([[0.0, 0.0], [-edge_depth, 0.0], [0.0, edge_height]]),
-                'rotation': {'angle': np.pi/2, 'direction': [1, 0, 0]}
+                'pos': np.array([terrain_center[0], (box_top_north_pos[1] + box_top_dims_NS[1]/2), (box_top_north_pos[2]-edge_height/2)]),
+                'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
+                'rotation_y': {'angle': np.pi/2, 'axis': [0, 1, 0]}
             },
             # South
             {
-                'box_pos': np.array(box_top_south_pos),
-                'offset': np.array([-triangular_prism_height/2, -box_dims_NS[1]/2, -edge_height/2]),
-                'vertices': np.array([[0.0, 0.0], [-edge_height, 0.0], [0.0, -edge_depth]]),
-                'rotation': {'angle': np.pi/2, 'direction': [0, 1, 0]}
+                'pos': np.array([terrain_center[0], (box_top_south_pos[1] - box_top_dims_NS[1]/2), (box_top_south_pos[2]-edge_height/2)]),
+                'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
+                'rotation_y': {'angle': np.pi/2, 'axis': [0, 1, 0]}
             },
             # East
             {
-                'box_pos': np.array(box_top_east_pos),
-                'offset': np.array([box_dims_EW[0]/2, triangular_prism_height/2, -edge_height/2]),
-                'vertices': np.array([[0.0, 0.0], [edge_depth, 0.0], [0.0, edge_height]]),
-                'rotation': {'angle': np.pi/2, 'direction': [1, 0, 0]}
+                'pos': np.array([(box_top_east_pos[0]+box_top_dims_EW[0]/2), terrain_center[1], (box_top_east_pos[2]-edge_height/2)]),
+                'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
+                'rotation_y': {'angle': 0, 'axis': [0, 1, 0]}
             },
-            # North
+            # West
             {
-                'box_pos': np.array(box_top_north_pos),
-                'offset': np.array([triangular_prism_height/2, box_dims_NS[1]/2, -edge_height/2]),
-                'vertices': np.array([[0.0, 0.0], [edge_height, 0.0], [0.0, edge_depth]]),
-                'rotation': {'angle': -np.pi/2, 'direction': [0, 1, 0]}
+                'pos': np.array([(box_top_west_pos[0] - box_top_dims_EW[0]/2), terrain_center[1], (box_top_west_pos[2]-edge_height/2)]),
+                'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
+                'rotation_y': {'angle': 0, 'axis': [0, 1, 0]}
             }
         ]
 
-        for config in side_configs:
-            prism_center = config['box_pos'] + config['offset']
+        meshes_list += _create_cylinder_edge(box_top_dims_NS[0], edge_height, cylinder_configs)
 
-            triangular_prism = trimesh.creation.extrude_triangulation(
-                vertices=config['vertices'],
-                faces=triangle_faces,
-                height=triangular_prism_height
-            )
-            
-            # Apply rotation and translation
-            rotation_transform = trimesh.transformations.rotation_matrix(
-                angle=config['rotation']['angle'],
-                direction=config['rotation']['direction'],
-                point=[0, 0, 0]
-            )
-            translation_transform = trimesh.transformations.translation_matrix(prism_center)
-            combined_transform = np.dot(translation_transform, rotation_transform)
-            
-            triangular_prism.apply_transform(combined_transform)
-            meshes_list.append(triangular_prism)
+        # triangular_prism_height = box_dims_EW[1] + 2*box_top_dims_NS[1] - 2*edge_depth
+        # triangle_faces = np.array([[0, 1, 2]])
 
+        # side_configs = [
+        #     # West
+        #     {
+        #         'box_pos': np.array(box_top_west_pos),
+        #         'offset': np.array([-box_dims_EW[0]/2, triangular_prism_height/2, -edge_height/2]),
+        #         'vertices': np.array([[0.0, 0.0], [-edge_depth, 0.0], [0.0, edge_height]]),
+        #         'rotation': {'angle': np.pi/2, 'direction': [1, 0, 0]}
+        #     },
+        #     # South
+        #     {
+        #         'box_pos': np.array(box_top_south_pos),
+        #         'offset': np.array([-triangular_prism_height/2, -box_dims_NS[1]/2, -edge_height/2]),
+        #         'vertices': np.array([[0.0, 0.0], [-edge_height, 0.0], [0.0, -edge_depth]]),
+        #         'rotation': {'angle': np.pi/2, 'direction': [0, 1, 0]}
+        #     },
+        #     # East
+        #     {
+        #         'box_pos': np.array(box_top_east_pos),
+        #         'offset': np.array([box_dims_EW[0]/2, triangular_prism_height/2, -edge_height/2]),
+        #         'vertices': np.array([[0.0, 0.0], [edge_depth, 0.0], [0.0, edge_height]]),
+        #         'rotation': {'angle': np.pi/2, 'direction': [1, 0, 0]}
+        #     },
+        #     # North
+        #     {
+        #         'box_pos': np.array(box_top_north_pos),
+        #         'offset': np.array([triangular_prism_height/2, box_dims_NS[1]/2, -edge_height/2]),
+        #         'vertices': np.array([[0.0, 0.0], [edge_height, 0.0], [0.0, edge_depth]]),
+        #         'rotation': {'angle': -np.pi/2, 'direction': [0, 1, 0]}
+        #     }
+        # ]
+
+        # for config in side_configs:
+        #     prism_center = config['box_pos'] + config['offset']
+
+        #     triangular_prism = trimesh.creation.extrude_triangulation(
+        #         vertices=config['vertices'],
+        #         faces=triangle_faces,
+        #         height=triangular_prism_height
+        #     )
+            
+        #     # Apply rotation and translation
+        #     rotation_transform = trimesh.transformations.rotation_matrix(
+        #         angle=config['rotation']['angle'],
+        #         direction=config['rotation']['direction'],
+        #         point=[0, 0, 0]
+        #     )
+        #     translation_transform = trimesh.transformations.translation_matrix(prism_center)
+        #     combined_transform = np.dot(translation_transform, rotation_transform)
+            
+        #     triangular_prism.apply_transform(combined_transform)
+        #     meshes_list.append(triangular_prism)
 
         
     # generate final box for the middle of the terrain
@@ -324,13 +511,42 @@ def pyramid_stairs_terrain(
     box_top_middle = trimesh.creation.box(middle_box_top_dims, trimesh.transformations.translation_matrix(middle_box_top_pos))    
     meshes_list.append(box_top_middle)
 
+    cylinder_configs = [
+    # North
+    {
+        'pos': np.array([middle_box_top_pos[0], (middle_box_top_pos[1]+middle_box_top_dims[1]/2), (middle_box_top_pos[2]-edge_height/2)]),
+        'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
+        'rotation_y': {'angle': np.pi/2, 'axis': [0, 1, 0]}
+    },
+    # South
+    {
+        'pos': np.array([middle_box_top_pos[0], (middle_box_top_pos[1]-middle_box_top_dims[1]/2), (middle_box_top_pos[2]-edge_height/2)]),
+        'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
+        'rotation_y': {'angle': np.pi/2, 'axis': [0, 1, 0]}
+    },
+    # East
+    {
+        'pos': np.array([(middle_box_top_pos[0]+middle_box_top_dims[0]/2), middle_box_top_pos[1], (middle_box_top_pos[2]-edge_height/2)]),
+        'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
+        'rotation_y': {'angle': 0, 'axis': [0, 1, 0]}
+    },
+    # West
+    {
+        'pos': np.array([(middle_box_top_pos[0]-middle_box_top_dims[0]/2), middle_box_top_pos[1], (middle_box_top_pos[2]-edge_height/2)]),
+        'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
+        'rotation_y': {'angle': 0, 'axis': [0, 1, 0]}
+    }
+]
+
+    meshes_list += _create_cylinder_edge(middle_box_top_dims[1], edge_height, cylinder_configs)
+
     # Adding Rough Surface
-    # rough_surface = _create_hf_random_surface(
-    #     middle_box_top_dims[:2], 
-    #     middle_box_top_pos,
-    #     noise_range=(0, 0.02),
-    #     resolution=30  # Higher resolution = more detailed surface
-    # )
+    rough_surface = _create_hf_random_surface(
+        middle_box_top_dims[:2], 
+        middle_box_top_pos,
+        noise_range=(0, 0.07),
+        resolution=30  # Higher resolution = more detailed surface
+    )
 
     # meshes_list.append(rough_surface)
     
@@ -388,7 +604,7 @@ def pyramid_stairs_terrain(
         combined_transform = np.dot(translation_transform, rotation_transform)
         
         triangular_prism.apply_transform(combined_transform)
-        meshes_list.append(triangular_prism)
+        # meshes_list.append(triangular_prism)
 
     # origin of the terrain
     origin = np.array([terrain_center[0], terrain_center[1], (num_steps + 1) * step_height])
@@ -451,17 +667,10 @@ def inverted_pyramid_stairs_terrain(
     # edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
     # edge_depth = cfg.edge_depth
 
-    # edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
-    # edge_depth = cfg.edge_depth[0] + difficulty * (cfg.edge_depth[1] - cfg.edge_depth[0])
-    edge_height = round(random.uniform(cfg.edge_height_range[0], cfg.edge_height_range[1] ), 3)
-    edge_depth = round(random.uniform(cfg.edge_depth[0], cfg.edge_depth[1] ), 3)
-
-    # print("step_height: ", step_height)
-    # print("edge_height: ", edge_height)
-    # print("edge_depth: ", edge_depth)
-    
-    # print(" Terrain height: ", difficulty)
-
+    edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
+    edge_depth = cfg.edge_depth[0] + difficulty * (cfg.edge_depth[1] - cfg.edge_depth[0])
+    # edge_height = round(random.uniform(cfg.edge_height_range[0], cfg.edge_height_range[1] ), 3)
+    # edge_depth = round(random.uniform(cfg.edge_depth[0], cfg.edge_depth[1] ), 3)
 
     triangle_faces = np.array([[0, 1, 2]])
 
@@ -506,60 +715,89 @@ def inverted_pyramid_stairs_terrain(
     origin = np.array([terrain_center[0], terrain_center[1], -(num_steps + 1) * step_height])
 
 
-    triangular_prism_height = terrain_size[0]
+    # triangular_prism_height = terrain_size[0]
 
-    side_configs = [
-        # West
+    # side_configs = [
+    #     # West
+    #     {
+    #         'box_pos': np.array(west_wall_pos),
+    #         'offset': np.array([-wall_depth/2, wall_length/2, wall_height/2]),
+    #         'vertices': np.array([[0.0, 0.0], [edge_depth, 0.0], [0.0, edge_height]]),
+    #         'rotation': {'angle': np.pi/2, 'direction': [1, 0, 0]}
+    #     },
+    #     # South
+    #     {
+    #         'box_pos': np.array(south_wall_pos),
+    #         'offset': np.array([-wall_length/2, -wall_depth/2, wall_height/2]),
+    #         'vertices': np.array([[0.0, 0.0], [-edge_height, 0.0], [0.0, edge_depth]]),
+    #         'rotation': {'angle': np.pi/2, 'direction': [0, 1, 0]}
+    #     },
+    #     # East
+    #     {
+    #         'box_pos': np.array(east_wall_pos),
+    #         'offset': np.array([wall_depth/2, wall_length/2, wall_height/2]),
+    #         'vertices': np.array([[0.0, 0.0], [-edge_depth, 0.0], [0.0, edge_height]]),
+    #         'rotation': {'angle': np.pi/2, 'direction': [1, 0, 0]}
+    #     },
+    #     # North
+    #     {
+    #         'box_pos': np.array(north_wall_pos),
+    #         'offset': np.array([wall_length/2, wall_depth/2, wall_height/2]),
+    #         'vertices': np.array([[0.0, 0.0], [edge_height, 0.0], [0.0, -edge_depth]]),
+    #         'rotation': {'angle': -np.pi/2, 'direction': [0, 1, 0]}
+    #     }
+    # ]
+
+    # for config in side_configs:
+    #     # prism_center = config['box_pos'] + config['offset']
+    #     prism_center = config['box_pos'] + config['offset']
+
+    #     triangular_prism = trimesh.creation.extrude_triangulation(
+    #         vertices=config['vertices'],
+    #         faces=triangle_faces,
+    #         height=triangular_prism_height
+    #     )
+        
+    #     # Apply rotation and translation
+    #     rotation_transform = trimesh.transformations.rotation_matrix(
+    #         angle=config['rotation']['angle'],
+    #         direction=config['rotation']['direction'],
+    #         point=[0, 0, 0]
+    #     )
+    #     translation_transform = trimesh.transformations.translation_matrix(prism_center)
+    #     combined_transform = np.dot(translation_transform, rotation_transform)
+        
+    #     triangular_prism.apply_transform(combined_transform)
+    #     meshes_list.append(triangular_prism)
+
+    cylinder_configs = [
+        # North
         {
-            'box_pos': np.array(west_wall_pos),
-            'offset': np.array([-wall_depth/2, wall_length/2, wall_height/2]),
-            'vertices': np.array([[0.0, 0.0], [edge_depth, 0.0], [0.0, edge_height]]),
-            'rotation': {'angle': np.pi/2, 'direction': [1, 0, 0]}
+            'pos': np.array([terrain_center[0], (terrain_center[1] + wall_y_dist + wall_depth/2), (terrain_center[2]-edge_height)]),
+            'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
+            'rotation_y': {'angle': np.pi/2, 'axis': [0, 1, 0]}
         },
         # South
         {
-            'box_pos': np.array(south_wall_pos),
-            'offset': np.array([-wall_length/2, -wall_depth/2, wall_height/2]),
-            'vertices': np.array([[0.0, 0.0], [-edge_height, 0.0], [0.0, edge_depth]]),
-            'rotation': {'angle': np.pi/2, 'direction': [0, 1, 0]}
+            'pos': np.array([terrain_center[0], (terrain_center[1] - wall_y_dist - wall_depth/2), (terrain_center[2]-edge_height)]),
+            'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
+            'rotation_y': {'angle': np.pi/2, 'axis': [0, 1, 0]}
         },
         # East
         {
-            'box_pos': np.array(east_wall_pos),
-            'offset': np.array([wall_depth/2, wall_length/2, wall_height/2]),
-            'vertices': np.array([[0.0, 0.0], [-edge_depth, 0.0], [0.0, edge_height]]),
-            'rotation': {'angle': np.pi/2, 'direction': [1, 0, 0]}
+            'pos': np.array([(terrain_center[0] + wall_x_dist + wall_depth/2), terrain_center[1], (terrain_center[2]-edge_height)]),
+            'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
+            'rotation_y': {'angle': 0, 'axis': [0, 1, 0]}
         },
-        # North
+        # West
         {
-            'box_pos': np.array(north_wall_pos),
-            'offset': np.array([wall_length/2, wall_depth/2, wall_height/2]),
-            'vertices': np.array([[0.0, 0.0], [edge_height, 0.0], [0.0, -edge_depth]]),
-            'rotation': {'angle': -np.pi/2, 'direction': [0, 1, 0]}
+            'pos': np.array([(terrain_center[0] - wall_x_dist - wall_depth/2), terrain_center[1], (terrain_center[2]-edge_height)]),
+            'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
+            'rotation_y': {'angle': 0, 'axis': [0, 1, 0]}
         }
     ]
 
-    for config in side_configs:
-        # prism_center = config['box_pos'] + config['offset']
-        prism_center = config['box_pos'] + config['offset']
-
-        triangular_prism = trimesh.creation.extrude_triangulation(
-            vertices=config['vertices'],
-            faces=triangle_faces,
-            height=triangular_prism_height
-        )
-        
-        # Apply rotation and translation
-        rotation_transform = trimesh.transformations.rotation_matrix(
-            angle=config['rotation']['angle'],
-            direction=config['rotation']['direction'],
-            point=[0, 0, 0]
-        )
-        translation_transform = trimesh.transformations.translation_matrix(prism_center)
-        combined_transform = np.dot(translation_transform, rotation_transform)
-        
-        triangular_prism.apply_transform(combined_transform)
-        meshes_list.append(triangular_prism)
+    meshes_list += _create_cylinder_edge(wall_length, edge_height, cylinder_configs)
 
     for k in range(num_steps):
         # check if we need to add holes around the steps
@@ -611,11 +849,11 @@ def inverted_pyramid_stairs_terrain(
         # -- bottom
         box_south_pos = (terrain_center[0], terrain_center[1] - box_base_y_dist, box_base_z_dist)
         box_south = trimesh.creation.box(box_dims_NS, trimesh.transformations.translation_matrix(box_south_pos))
-        # right/left
+        # right/left 
+        box_dims_EW = (box_base_depth, box_base_EW_length, box_base_height)
         if cfg.holes:
             box_dims_EW = (box_base_depth, box_size[1], box_base_height)
-        else:
-            box_dims_EW = (box_base_depth, box_base_EW_length, box_base_height)
+            
         # -- right
         box_east_pos = (terrain_center[0] + box_base_x_dist, terrain_center[1], box_base_z_dist)
         # if k == 0:
@@ -655,70 +893,104 @@ def inverted_pyramid_stairs_terrain(
 
         meshes_list += [box_top_north, box_top_south, box_top_east, box_top_west]
 
-        triangular_prism_height = box_dims_EW[1] + 2*box_dims_NS[1] - 2*edge_depth
+        # meshes_list += _create_triangle_edge_inv(
+        #     box_dims_NS, box_dims_EW, box_top_depth, box_top_west_pos, box_top_south_pos,
+        #     box_top_east_pos, box_top_north_pos, edge_depth, edge_height, triangle_faces
+        # )
+
+        # triangular_prism_height = box_dims_EW[1] + 2*box_dims_NS[1] - 2*edge_depth
 
 
-        # level_dims = [box_top_dims_NS[0], box_top_dims_NS[0]]
-        # level_center = [terrain_center[0], terrain_center[1], box_top_north_pos[2]]
+        # # level_dims = [box_top_dims_NS[0], box_top_dims_NS[0]]
+        # # level_center = [terrain_center[0], terrain_center[1], box_top_north_pos[2]]
 
-        # resolution = round(level_dims[0] * 30 / (terrain_size[0] - 2 * num_steps * cfg.step_width - 2*edge_depth))
+        # # resolution = round(level_dims[0] * 30 / (terrain_size[0] - 2 * num_steps * cfg.step_width - 2*edge_depth))
 
-        # rough_surface_level = _create_hf_random_surface(level_dims, level_center, noise_range=(0, 0.02), resolution=resolution)
+        # # rough_surface_level = _create_hf_random_surface(level_dims, level_center, noise_range=(0, 0.02), resolution=resolution)
 
-        # meshes_list.append(rough_surface_level)
+        # # meshes_list.append(rough_surface_level)
 
-        side_configs = [
-            # West
+        cylinder_configs = [
+            # North
             {
-                # Array behind box pos cancels 
-                'box_pos': np.array(box_top_west_pos),
-                'offset': np.array([box_top_depth/2, triangular_prism_height/2, -edge_height/2]),
-                'vertices': np.array([[0.0, 0.0], [edge_depth, 0.0], [0.0, edge_height]]),
-                'rotation': {'angle': np.pi/2, 'direction': [1, 0, 0]}
+                'pos': np.array([terrain_center[0], (box_top_north_pos[1] - box_top_dims_NS[1]/2), (box_top_north_pos[2]-edge_height/2)]),
+                'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
+                'rotation_y': {'angle': np.pi/2, 'axis': [0, 1, 0]}
             },
             # South
             {
-                'box_pos': np.array(box_top_south_pos),
-                'offset': np.array([-triangular_prism_height/2, box_top_depth/2, -edge_height/2]),
-                'vertices': np.array([[0.0, 0.0], [-edge_height, 0.0], [0.0, edge_depth]]),
-                'rotation': {'angle': np.pi/2, 'direction': [0, 1, 0]}
+                'pos': np.array([terrain_center[0], (box_top_south_pos[1] + box_top_dims_NS[1]/2), (box_top_south_pos[2]-edge_height/2)]),
+                'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
+                'rotation_y': {'angle': np.pi/2, 'axis': [0, 1, 0]}
             },
             # East
             {
-                'box_pos': np.array(box_top_east_pos),
-                'offset': np.array([-box_top_depth/2, triangular_prism_height/2, -edge_height/2]),
-                'vertices': np.array([[0.0, 0.0], [-edge_depth, 0.0], [0.0, edge_height]]),
-                'rotation': {'angle': np.pi/2, 'direction': [1, 0, 0]}
+                'pos': np.array([(box_top_east_pos[0] - box_top_dims_EW[0]/2), terrain_center[1], (box_top_east_pos[2]-edge_height/2)]),
+                'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
+                'rotation_y': {'angle': 0, 'axis': [0, 1, 0]}
             },
-            # North
+            # West
             {
-                'box_pos': np.array(box_top_north_pos),
-                'offset': np.array([triangular_prism_height/2, -box_top_depth/2, -edge_height/2]),
-                'vertices': np.array([[0.0, 0.0], [edge_height, 0.0], [0.0, -edge_depth]]),
-                'rotation': {'angle': -np.pi/2, 'direction': [0, 1, 0]}
+                'pos': np.array([(box_top_west_pos[0] + box_top_dims_EW[0]/2), terrain_center[1], (box_top_west_pos[2]-edge_height/2)]),
+                'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
+                'rotation_y': {'angle': 0, 'axis': [0, 1, 0]}
             }
         ]
 
-        for config in side_configs:
-            prism_center = config['box_pos'] + config['offset']
+        meshes_list += _create_cylinder_edge(box_top_dims_NS[0], edge_height, cylinder_configs)
 
-            triangular_prism = trimesh.creation.extrude_triangulation(
-                vertices=config['vertices'],
-                faces=triangle_faces,
-                height=triangular_prism_height
-            )
+        # side_configs = [
+        #     # West
+        #     {
+        #         # Array behind box pos cancels 
+        #         'box_pos': np.array(box_top_west_pos),
+        #         'offset': np.array([box_top_depth/2, triangular_prism_height/2, -edge_height/2]),
+        #         'vertices': np.array([[0.0, 0.0], [edge_depth, 0.0], [0.0, edge_height]]),
+        #         'rotation': {'angle': np.pi/2, 'direction': [1, 0, 0]}
+        #     },
+        #     # South
+        #     {
+        #         'box_pos': np.array(box_top_south_pos),
+        #         'offset': np.array([-triangular_prism_height/2, box_top_depth/2, -edge_height/2]),
+        #         'vertices': np.array([[0.0, 0.0], [-edge_height, 0.0], [0.0, edge_depth]]),
+        #         'rotation': {'angle': np.pi/2, 'direction': [0, 1, 0]}
+        #     },
+        #     # East
+        #     {
+        #         'box_pos': np.array(box_top_east_pos),
+        #         'offset': np.array([-box_top_depth/2, triangular_prism_height/2, -edge_height/2]),
+        #         'vertices': np.array([[0.0, 0.0], [-edge_depth, 0.0], [0.0, edge_height]]),
+        #         'rotation': {'angle': np.pi/2, 'direction': [1, 0, 0]}
+        #     },
+        #     # North
+        #     {
+        #         'box_pos': np.array(box_top_north_pos),
+        #         'offset': np.array([triangular_prism_height/2, -box_top_depth/2, -edge_height/2]),
+        #         'vertices': np.array([[0.0, 0.0], [edge_height, 0.0], [0.0, -edge_depth]]),
+        #         'rotation': {'angle': -np.pi/2, 'direction': [0, 1, 0]}
+        #     }
+        # ]
+
+        # for config in side_configs:
+        #     prism_center = config['box_pos'] + config['offset']
+
+        #     triangular_prism = trimesh.creation.extrude_triangulation(
+        #         vertices=config['vertices'],
+        #         faces=triangle_faces,
+        #         height=triangular_prism_height
+        #     )
             
-            # Apply rotation and translation
-            rotation_transform = trimesh.transformations.rotation_matrix(
-                angle=config['rotation']['angle'],
-                direction=config['rotation']['direction'],
-                point=[0, 0, 0]
-            )
-            translation_transform = trimesh.transformations.translation_matrix(prism_center)
-            combined_transform = np.dot(translation_transform, rotation_transform)
+        #     # Apply rotation and translation
+        #     rotation_transform = trimesh.transformations.rotation_matrix(
+        #         angle=config['rotation']['angle'],
+        #         direction=config['rotation']['direction'],
+        #         point=[0, 0, 0]
+        #     )
+        #     translation_transform = trimesh.transformations.translation_matrix(prism_center)
+        #     combined_transform = np.dot(translation_transform, rotation_transform)
             
-            triangular_prism.apply_transform(combined_transform)
-            meshes_list.append(triangular_prism)
+        #     triangular_prism.apply_transform(combined_transform)
+        #     meshes_list.append(triangular_prism)
 
     # generate final box for the middle of the terrain
     box_dims = (
@@ -729,6 +1001,14 @@ def inverted_pyramid_stairs_terrain(
     box_pos = (terrain_center[0], terrain_center[1], terrain_center[2] - total_height - step_height/2)
     box_middle = trimesh.creation.box(box_dims, trimesh.transformations.translation_matrix(box_pos))
     meshes_list.append(box_middle)
+
+
+    level_dims = [box_dims[0], box_dims[1]]
+    resolution = round(level_dims[0] * 30 / (terrain_size[0] - 2 * num_steps * cfg.step_width - 2*edge_depth))
+    rough_surface_level = _create_hf_random_surface(level_dims, box_pos, noise_range=(0, 0.02), resolution=resolution)
+
+    # meshes_list.append(rough_surface_level)
+
     # origin of the terrain
     origin = np.array([terrain_center[0], terrain_center[1], -(num_steps + 1) * step_height])
     
