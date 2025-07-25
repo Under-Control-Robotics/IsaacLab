@@ -26,7 +26,7 @@ def _create_hf_random_surface(box_dims, box_pos, noise_range=(0.002, 0.005), res
     """Create rough surface using heightfield approach similar to HfRandomUniformTerrainCfg"""
     width, length = box_dims[0], box_dims[1]
 
-    print("width: ", width, " length: ", length)
+    # print("width: ", width, " length: ", length)
     
     # Parameters similar to HfRandomUniformTerrainCfg
     vertical_scale = 0.01  # Fine height resolution
@@ -36,7 +36,7 @@ def _create_hf_random_surface(box_dims, box_pos, noise_range=(0.002, 0.005), res
     width_pixels = int(width * resolution / 2.17)
     length_pixels = int(length * resolution / 2.17)
 
-    print("width_pixel: ", width_pixels, " length_pixel: ", length_pixels)
+    # print("width_pixel: ", width_pixels, " length_pixel: ", length_pixels)
 
     # width_pixels = int(resolution)
     # length_pixels = int(resolution)
@@ -235,16 +235,16 @@ def pyramid_stairs_terrain(
         # compute the quantities of the box
         # -- location
 
-        # edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
-        # edge_depth = cfg.edge_depth[0] + difficulty * (cfg.edge_depth[1] - cfg.edge_depth[0])
-        edge_height = round(random.uniform(cfg.edge_height_range[0], cfg.edge_height_range[1] ), 3)
-        edge_depth = round(random.uniform(cfg.edge_depth[0], cfg.edge_depth[1] ), 3)
+        edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
+        edge_depth = cfg.edge_depth[0] + difficulty * (cfg.edge_depth[1] - cfg.edge_depth[0])
+        # edge_height = round(random.uniform(cfg.edge_height_range[0], cfg.edge_height_range[1] ), 3)
+        # edge_depth = round(random.uniform(cfg.edge_depth[0], cfg.edge_depth[1] ), 3)
         
         box_offset = (k + 0.5) * cfg.step_width
 
 
         rand_num = random.randint(1, 5)
-        # rand_num = 2
+        rand_num = -1
 
         if rand_num == 1:
             edge_height = 0
@@ -358,36 +358,36 @@ def pyramid_stairs_terrain(
             meshes_list += _create_triangle_edge(triangle_faces, triangular_prism_height, triangular_edge_configs)
 
         
-        # elif rand_num == 6:
+        else:
 
-        #     cylinder_configs = [
-        #         # North
-        #         {
-        #             'pos': np.array([terrain_center[0], (box_top_north_pos[1] + box_top_dims_NS[1]/2), (box_top_north_pos[2]-edge_height/2)]),
-        #             'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
-        #             'rotation_y': {'angle': np.pi/2, 'axis': [0, 1, 0]}
-        #         },
-        #         # South
-        #         {
-        #             'pos': np.array([terrain_center[0], (box_top_south_pos[1] - box_top_dims_NS[1]/2), (box_top_south_pos[2]-edge_height/2)]),
-        #             'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
-        #             'rotation_y': {'angle': np.pi/2, 'axis': [0, 1, 0]}
-        #         },
-        #         # East
-        #         {
-        #             'pos': np.array([(box_top_east_pos[0]+box_top_dims_EW[0]/2), terrain_center[1], (box_top_east_pos[2]-edge_height/2)]),
-        #             'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
-        #             'rotation_y': {'angle': 0, 'axis': [0, 1, 0]}
-        #         },
-        #         # West
-        #         {
-        #             'pos': np.array([(box_top_west_pos[0] - box_top_dims_EW[0]/2), terrain_center[1], (box_top_west_pos[2]-edge_height/2)]),
-        #             'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
-        #             'rotation_y': {'angle': 0, 'axis': [0, 1, 0]}
-        #         }
-        #     ]
+            cylinder_configs = [
+                # North
+                {
+                    'pos': np.array([terrain_center[0], (box_top_north_pos[1] + box_top_dims_NS[1]/2), (box_top_north_pos[2]-edge_height/2)]),
+                    'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
+                    'rotation_y': {'angle': np.pi/2, 'axis': [0, 1, 0]}
+                },
+                # South
+                {
+                    'pos': np.array([terrain_center[0], (box_top_south_pos[1] - box_top_dims_NS[1]/2), (box_top_south_pos[2]-edge_height/2)]),
+                    'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
+                    'rotation_y': {'angle': np.pi/2, 'axis': [0, 1, 0]}
+                },
+                # East
+                {
+                    'pos': np.array([(box_top_east_pos[0]+box_top_dims_EW[0]/2), terrain_center[1], (box_top_east_pos[2]-edge_height/2)]),
+                    'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
+                    'rotation_y': {'angle': 0, 'axis': [0, 1, 0]}
+                },
+                # West
+                {
+                    'pos': np.array([(box_top_west_pos[0] - box_top_dims_EW[0]/2), terrain_center[1], (box_top_west_pos[2]-edge_height/2)]),
+                    'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
+                    'rotation_y': {'angle': 0, 'axis': [0, 1, 0]}
+                }
+            ]
 
-        #     meshes_list += _create_cylinder_edge(box_top_dims_NS[0], edge_depth, cylinder_configs)
+            meshes_list += _create_cylinder_edge(box_top_dims_NS[0], edge_depth, cylinder_configs)
 
         # for config in side_configs:
         #     prism_center = config['box_pos'] + config['offset']
@@ -412,7 +412,7 @@ def pyramid_stairs_terrain(
 
         
     rand_num = random.randint(1, 5)
-    # rand_num = 2
+    rand_num = -1
 
     if rand_num == 1:
         edge_depth = 0
@@ -494,36 +494,36 @@ def pyramid_stairs_terrain(
         meshes_list += _create_triangle_edge(middle_triangle_faces, middle_triangular_prism_height, middle_triangular_edge_configs_configs)
 
 
-    # elif rand_num == 6:
+    else:
 
-    #     cylinder_configs = [
-    #         # North
-    #         {
-    #             'pos': np.array([middle_box_top_pos[0], (middle_box_top_pos[1]+middle_box_top_dims[1]/2), (middle_box_top_pos[2]-edge_height/2)]),
-    #             'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
-    #             'rotation_y': {'angle': np.pi/2, 'axis': [0, 1, 0]}
-    #         },
-    #         # South
-    #         {
-    #             'pos': np.array([middle_box_top_pos[0], (middle_box_top_pos[1]-middle_box_top_dims[1]/2), (middle_box_top_pos[2]-edge_height/2)]),
-    #             'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
-    #             'rotation_y': {'angle': np.pi/2, 'axis': [0, 1, 0]}
-    #         },
-    #         # East
-    #         {
-    #             'pos': np.array([(middle_box_top_pos[0]+middle_box_top_dims[0]/2), middle_box_top_pos[1], (middle_box_top_pos[2]-edge_height/2)]),
-    #             'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
-    #             'rotation_y': {'angle': 0, 'axis': [0, 1, 0]}
-    #         },
-    #         # West
-    #         {
-    #             'pos': np.array([(middle_box_top_pos[0]-middle_box_top_dims[0]/2), middle_box_top_pos[1], (middle_box_top_pos[2]-edge_height/2)]),
-    #             'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
-    #             'rotation_y': {'angle': 0, 'axis': [0, 1, 0]}
-    #         }
-    #     ]
+        cylinder_configs = [
+            # North
+            {
+                'pos': np.array([middle_box_top_pos[0], (middle_box_top_pos[1]+middle_box_top_dims[1]/2), (middle_box_top_pos[2]-edge_height/2)]),
+                'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
+                'rotation_y': {'angle': np.pi/2, 'axis': [0, 1, 0]}
+            },
+            # South
+            {
+                'pos': np.array([middle_box_top_pos[0], (middle_box_top_pos[1]-middle_box_top_dims[1]/2), (middle_box_top_pos[2]-edge_height/2)]),
+                'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
+                'rotation_y': {'angle': np.pi/2, 'axis': [0, 1, 0]}
+            },
+            # East
+            {
+                'pos': np.array([(middle_box_top_pos[0]+middle_box_top_dims[0]/2), middle_box_top_pos[1], (middle_box_top_pos[2]-edge_height/2)]),
+                'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
+                'rotation_y': {'angle': 0, 'axis': [0, 1, 0]}
+            },
+            # West
+            {
+                'pos': np.array([(middle_box_top_pos[0]-middle_box_top_dims[0]/2), middle_box_top_pos[1], (middle_box_top_pos[2]-edge_height/2)]),
+                'rotation_x': {'angle': np.pi/2, 'axis': [1, 0, 0]},
+                'rotation_y': {'angle': 0, 'axis': [0, 1, 0]}
+            }
+        ]
 
-    #     meshes_list += _create_cylinder_edge(middle_box_top_dims[1], edge_depth, cylinder_configs)
+        meshes_list += _create_cylinder_edge(middle_box_top_dims[1], edge_depth, cylinder_configs)
 
     # origin of the terrain
     origin = np.array([terrain_center[0], terrain_center[1], (num_steps + 1) * step_height])
@@ -591,8 +591,8 @@ def inverted_pyramid_stairs_terrain(
     edge_height = round(random.uniform(cfg.edge_height_range[0], cfg.edge_height_range[1] ), 3)
     edge_depth = round(random.uniform(cfg.edge_depth[0], cfg.edge_depth[1] ), 3)
 
-    rand_num = random.randint(1, 3)
-    #rand_num = 1
+    rand_num = random.randint(1, 5)
+    # rand_num = -1
 
     # B: Option for regular stairs
     if rand_num == 1:
@@ -679,7 +679,7 @@ def inverted_pyramid_stairs_terrain(
 
         meshes_list += _create_triangle_edge(triangle_faces, triangular_prism_height, triangular_prism_wall_configs)
 
-    # elif rand_num == 6:
+    # else:
 
     #     cylinder_configs = [
     #         # North
@@ -720,13 +720,13 @@ def inverted_pyramid_stairs_terrain(
             box_size = (terrain_size[0] - 2 * k * cfg.step_width, terrain_size[1] - 2 * k * cfg.step_width)
         # compute the quantities of the box
 
-        # edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
-        # edge_depth = cfg.edge_depth[0] + difficulty * (cfg.edge_depth[1] - cfg.edge_depth[0])
-        edge_height = round(random.uniform(cfg.edge_height_range[0], cfg.edge_height_range[1] ), 3)
-        edge_depth = round(random.uniform(cfg.edge_depth[0], cfg.edge_depth[1] ), 3)
+        edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
+        edge_depth = cfg.edge_depth[0] + difficulty * (cfg.edge_depth[1] - cfg.edge_depth[0])
+        # edge_height = round(random.uniform(cfg.edge_height_range[0], cfg.edge_height_range[1] ), 3)
+        # edge_depth = round(random.uniform(cfg.edge_depth[0], cfg.edge_depth[1] ), 3)
 
         rand_num = random.randint(1, 5)
-        # rand_num = 2
+        # rand_num = 3
 
         if rand_num == 1:
             edge_height = 0

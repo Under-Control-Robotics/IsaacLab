@@ -214,6 +214,26 @@ class RayCaster(SensorBase):
         self._data.quat_w = torch.zeros(self._view.count, 4, device=self._device)
         self._data.ray_hits_w = torch.zeros(self._view.count, self.num_rays, 3, device=self._device)
 
+
+        # from scipy.spatial.transform import Rotation as R       # SciPy ≥1.4
+
+        # O_W = np.array([8.0644, -15.4872, 0.1280])
+
+        # q_W_from_S = np.array([0.8747, -0.0041, 0.0446, -0.4826])  # (w,x,y,z)
+        # rot_W_from_S = R.from_quat(q_W_from_S[[1,2,3,0]])          # SciPy expects (x,y,z,w)
+        # rot_S_from_W = rot_W_from_S.inv()
+
+        # P_W = np.array([x, y, z])          # <-- fill in your world point
+
+        # r_W = P_W - O_W
+        # P_S = rot_S_from_W.apply(r_W)
+
+        # distance = np.linalg.norm(P_S)     # always correct
+        # z_distance = P_S[2]                # correct when x_S ≈ 0 and y_S ≈ 0
+
+
+        # breakpoint()
+
     def _update_buffers_impl(self, env_ids: Sequence[int]):
         """Fills the buffers of the sensor data."""
         # obtain the poses of the sensors
