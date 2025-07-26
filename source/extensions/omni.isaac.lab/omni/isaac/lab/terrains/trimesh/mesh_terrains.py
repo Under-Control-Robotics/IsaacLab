@@ -244,7 +244,6 @@ def pyramid_stairs_terrain(
 
 
         rand_num = random.randint(1, 5)
-        rand_num = -1
 
         if rand_num == 1:
             edge_height = 0
@@ -412,7 +411,6 @@ def pyramid_stairs_terrain(
 
         
     rand_num = random.randint(1, 5)
-    rand_num = -1
 
     if rand_num == 1:
         edge_depth = 0
