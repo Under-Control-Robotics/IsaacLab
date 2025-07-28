@@ -215,8 +215,8 @@ def pyramid_stairs_terrain(
     # edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
     # edge_depth = cfg.edge_depth
 
-    edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
-    edge_depth = cfg.edge_depth[0] + difficulty * (cfg.edge_depth[1] - cfg.edge_depth[0])
+    # edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
+    # edge_depth = cfg.edge_depth[0] + difficulty * (cfg.edge_depth[1] - cfg.edge_depth[0])
 
 
 
@@ -237,8 +237,8 @@ def pyramid_stairs_terrain(
 
         # edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
         # edge_depth = cfg.edge_depth[0] + difficulty * (cfg.edge_depth[1] - cfg.edge_depth[0])
-        # edge_height = round(random.uniform(cfg.edge_height_range[0], cfg.edge_height_range[1] ), 3)
-        # edge_depth = round(random.uniform(cfg.edge_depth[0], cfg.edge_depth[1] ), 3)
+        edge_height = round(random.uniform(cfg.edge_height_range[0], cfg.edge_height_range[1] ), 3)
+        edge_depth = round(random.uniform(cfg.edge_depth[0], cfg.edge_depth[1] ), 3)
         
         box_offset = (k + 0.5) * cfg.step_width
         
@@ -464,10 +464,10 @@ def inverted_pyramid_stairs_terrain(
     # edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
     # edge_depth = cfg.edge_depth
 
-    edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
-    edge_depth = cfg.edge_depth[0] + difficulty * (cfg.edge_depth[1] - cfg.edge_depth[0])
-    # edge_height = round(random.uniform(cfg.edge_height_range[0], cfg.edge_height_range[1] ), 3)
-    # edge_depth = round(random.uniform(cfg.edge_depth[0], cfg.edge_depth[1] ), 3)
+    # edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
+    # edge_depth = cfg.edge_depth[0] + difficulty * (cfg.edge_depth[1] - cfg.edge_depth[0])
+    edge_height = round(random.uniform(cfg.edge_height_range[0], cfg.edge_height_range[1] ), 3)
+    edge_depth = round(random.uniform(cfg.edge_depth[0], cfg.edge_depth[1] ), 3)
 
     triangle_faces = np.array([[0, 1, 2]])
 
@@ -558,8 +558,8 @@ def inverted_pyramid_stairs_terrain(
 
         # edge_height = cfg.edge_height_range[0] + difficulty * (cfg.edge_height_range[1] - cfg.edge_height_range[0])
         # edge_depth = cfg.edge_depth[0] + difficulty * (cfg.edge_depth[1] - cfg.edge_depth[0])
-        # edge_height = round(random.uniform(cfg.edge_height_range[0], cfg.edge_height_range[1] ), 3)
-        # edge_depth = round(random.uniform(cfg.edge_depth[0], cfg.edge_depth[1] ), 3)
+        edge_height = round(random.uniform(cfg.edge_height_range[0], cfg.edge_height_range[1] ), 3)
+        edge_depth = round(random.uniform(cfg.edge_depth[0], cfg.edge_depth[1] ), 3)
 
         # print("edge height: ", edge_height)
 
