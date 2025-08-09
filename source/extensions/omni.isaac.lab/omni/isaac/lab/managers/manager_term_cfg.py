@@ -194,6 +194,14 @@ class EventTermCfg(ManagerTermBaseCfg):
     and any other parameters as input.
     """
 
+    stop_func: Callable[..., None] | None = None
+    """The name of function to be called when the duration ends.
+
+    This function will be called when a duration-based event ends,
+    instead of calling the main func with parameters modified.
+    This allows cleaner separation of start/stop logic for duration events.
+    """
+
     mode: str = MISSING
     """The mode in which the event term is applied.
 
@@ -235,6 +243,17 @@ class EventTermCfg(ManagerTermBaseCfg):
 
     Note:
         This is only used if the mode is ``"reset"``.
+    """
+
+    duration_range_s: tuple[float, float] | None = None
+    """The range of time in seconds for which the term is applied. Defaults to None.
+
+    Based on this, the duration is sampled uniformly between the specified
+    range for each environment instance. The term is applied on the environment
+    instances for the duration specified.
+
+    Note:
+        This is only used if the mode is ``"duration"``.
     """
 
 

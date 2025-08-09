@@ -41,6 +41,7 @@ class EventManager(ManagerBase):
     - "startup": Event is applied once at the beginning of the training.
     - "reset": Event is applied at every reset.
     - "interval": Event is applied at pre-specified intervals of time.
+    - "duration": Event is applied for a specific duration of time at every interval.
 
     However, you can also define your own modes and use them in the training process as you see fit.
     For this you will need to add the triggering of that mode in the environment implementation as well.
@@ -85,6 +86,11 @@ class EventManager(ManagerBase):
                 table.align["Name"] = "l"
                 for index, (name, cfg) in enumerate(zip(self._mode_term_names[mode], self._mode_term_cfgs[mode])):
                     table.add_row([index, name, cfg.interval_range_s])
+            elif mode == "duration":
+                table.field_names = ["Index", "Name", "Interval time range (s)", "Duration time range (s)"]
+                table.align["Name"] = "l"
+                for index, (name, cfg) in enumerate(zip(self._mode_term_names[mode], self._mode_term_cfgs[mode])):
+                    table.add_row([index, name, cfg.interval_range_s, cfg.duration_range_s])
             else:
                 table.field_names = ["Index", "Name"]
                 table.align["Name"] = "l"
@@ -145,6 +151,9 @@ class EventManager(ManagerBase):
         steps that have happened since the last trigger of the function is equal to its configured parameter for
         the number of environment steps between resets.
 
+        For the "duration" mode, the function is called when the time interval has passed and the function is called
+        while the duration is active.
+
         Args:
             mode: The mode of event.
             env_ids: The indices of the environments to apply the event to.
@@ -160,6 +169,7 @@ class EventManager(ManagerBase):
                 behavior as the environment indices are computed based on the time left for each environment.
             ValueError: If the mode is ``"reset"`` and the total number of environment steps that have happened
                 is not provided.
+            ValueError: If the mode is ``"duration"`` and the duration range and interval are not provided.
         """
         # check if mode is valid
         if mode not in self._mode_term_names:
@@ -176,6 +186,14 @@ class EventManager(ManagerBase):
         # check if mode is reset and env step count is not provided
         if mode == "reset" and global_env_step_count is None:
             raise ValueError(f"Event mode '{mode}' requires the total number of environment steps to be provided.")
+        # check if mode is duration and duration range is not provided
+        if mode == "duration" and (dt is None or env_ids is not None):
+            raise ValueError(
+                f"Event mode '{mode}' requires the time-step of the environment and does not require environment"
+                " indices. This is an undefined behavior as the environment indices are computed based on the"
+                " duration range."
+            )
+
 
         # iterate over all the event terms
         for index, term_cfg in enumerate(self._mode_term_cfgs[mode]):
@@ -201,6 +219,74 @@ class EventManager(ManagerBase):
                         lower, upper = term_cfg.interval_range_s
                         sampled_time = torch.rand(len(valid_env_ids), device=self.device) * (upper - lower) + lower
                         self._interval_term_time_left[index][valid_env_ids] = sampled_time
+
+                        # call the event term
+                        term_cfg.func(self._env, valid_env_ids, **term_cfg.params)
+            elif mode == "duration":
+                # extract time left for this term
+                time_left = self._duration_term_interval_time_left[index]
+                # Always decrement interval time - global timer keeps running
+                time_left -= dt
+
+                # Store duration_left reference and track which were active before interval processing
+                duration_left = self._duration_term_duration_time_left[index]
+                was_active_before_interval = duration_left < float('inf') - 1e-6
+
+                # check if the interval has passed and sample a new interval
+                if term_cfg.is_global_time:
+                    if time_left < 1e-6:
+                        # resample interval
+                        lower, upper = term_cfg.interval_range_s
+                        sampled_interval = torch.rand(1, device=self.device) * (upper - lower) + lower
+                        self._duration_term_interval_time_left[index][:] = sampled_interval
+
+                        # start only if inactive
+                        inactive = self._duration_term_duration_time_left[index] >= float('inf') - 1e-6
+                        if inactive.all():
+                            lower, upper = term_cfg.duration_range_s
+                            sampled_duration = torch.rand(1, device=self.device) * (upper - lower) + lower
+                            self._duration_term_duration_time_left[index][:] = sampled_duration
+                            term_cfg.func(self._env, None, **term_cfg.params)
+
+                    # decrement only those active before
+                    duration_left[was_active_before_interval] -= dt
+
+                    # stop (global -> pass None)
+                    if (duration_left < 1e-6).any():
+                        assert term_cfg.stop_func is not None
+                        term_cfg.stop_func(self._env, None, **term_cfg.params)
+                        self._duration_term_duration_time_left[index][:] = float('inf')
+                else:
+                    # First, decrement duration time - but only for durations that were active BEFORE interval processing
+                    # This prevents same-frame start/stop for newly created durations
+                    duration_left[was_active_before_interval] -= dt
+
+                    # Check for duration expiration and stop those durations FIRST
+                    valid_duration_env_ids = (duration_left < 1e-6).nonzero().flatten()
+                    if len(valid_duration_env_ids) > 0:
+                        # call the stop function to end the duration event
+                        # Note: We validated that stop_func is not None for duration events
+                        assert term_cfg.stop_func is not None
+                        term_cfg.stop_func(self._env, valid_duration_env_ids, **term_cfg.params)
+
+                        # Reset duration timer to infinity (inactive until next interval trigger)
+                        self._duration_term_duration_time_left[index][valid_duration_env_ids] = float('inf')
+
+                    # Now check for interval triggers - AFTER stopping expired durations
+                    valid_env_ids = (time_left < 1e-6).nonzero().flatten()
+                    inactive = self._duration_term_duration_time_left[index] >= float('inf') - 1e-6
+                    valid_env_ids = valid_env_ids[inactive[valid_env_ids]]
+
+                    if len(valid_env_ids) > 0:
+                        # Always resample interval timer for these environments
+                        lower, upper = term_cfg.interval_range_s
+                        sampled_time = torch.rand(len(valid_env_ids), device=self.device) * (upper - lower) + lower
+                        self._duration_term_interval_time_left[index][valid_env_ids] = sampled_time
+
+                        # Start new durations for these environments (only if inactive)
+                        lower, upper = term_cfg.duration_range_s
+                        sampled_duration = torch.rand(len(valid_env_ids), device=self.device) * (upper - lower) + lower
+                        self._duration_term_duration_time_left[index][valid_env_ids] = sampled_duration
 
                         # call the event term
                         term_cfg.func(self._env, valid_env_ids, **term_cfg.params)
@@ -303,6 +389,9 @@ class EventManager(ManagerBase):
         # buffer to store the time left for "interval" mode
         # if interval is global, then it is a single value, otherwise it is per environment
         self._interval_term_time_left: list[torch.Tensor] = list()
+        # buffer to store the time left for "duration" mode
+        self._duration_term_interval_time_left: list[torch.Tensor] = list()
+        self._duration_term_duration_time_left: list[torch.Tensor] = list()
         # buffer to store the step count when the term was last triggered for each environment for "reset" mode
         self._reset_term_last_triggered_step_id: list[torch.Tensor] = list()
         self._reset_term_last_triggered_once: list[torch.Tensor] = list()
@@ -378,3 +467,32 @@ class EventManager(ManagerBase):
                 # initialize the trigger flag for each environment to zero
                 no_trigger = torch.zeros(self.num_envs, device=self.device, dtype=torch.bool)
                 self._reset_term_last_triggered_once.append(no_trigger)
+            elif term_cfg.mode == "duration":
+                if term_cfg.duration_range_s is None or term_cfg.interval_range_s is None:
+                    raise ValueError(
+                        f"Event term '{term_name}' has mode 'duration' but 'duration_range_s' or 'interval_range_s'"
+                        " is not specified."
+                    )
+                if term_cfg.stop_func is None:
+                    raise ValueError(
+                        f"Event term '{term_name}' has mode 'duration' but 'stop_func' is not specified. "
+                        "Duration events require a stop_func to properly end the event."
+                    )
+                # sample the time left for global
+                if term_cfg.is_global_time:
+                    lower, upper = term_cfg.interval_range_s
+                    time_left = torch.rand(1) * (upper - lower) + lower
+                    self._duration_term_interval_time_left.append(time_left)
+
+                    # Initialize duration timer to infinity (inactive until interval triggers)
+                    duration_time_left = torch.full((1,), float('inf'))
+                    self._duration_term_duration_time_left.append(duration_time_left)
+                else:
+                    # sample the time left for each environment
+                    lower, upper = term_cfg.interval_range_s
+                    time_left = torch.rand(self.num_envs, device=self.device) * (upper - lower) + lower
+                    self._duration_term_interval_time_left.append(time_left)
+
+                    # Initialize duration timer to infinity (inactive until interval triggers)
+                    duration_time_left = torch.full((self.num_envs,), float('inf'), device=self.device)
+                    self._duration_term_duration_time_left.append(duration_time_left)
