@@ -214,6 +214,9 @@ class RayCaster(SensorBase):
         self._data.quat_w = torch.zeros(self._view.count, 4, device=self._device)
         self._data.ray_hits_w = torch.zeros(self._view.count, self.num_rays, 3, device=self._device)
 
+        self._data.ray_starts = self.ray_starts.clone()
+        self._data.ray_direction = self.ray_directions.clone()
+
     def _update_buffers_impl(self, env_ids: Sequence[int]):
         """Fills the buffers of the sensor data."""
         # obtain the poses of the sensors

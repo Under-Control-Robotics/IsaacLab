@@ -173,6 +173,74 @@ def height_scan(env: ManagerBasedEnv, sensor_cfg: SceneEntityCfg, offset: float 
     return sensor.data.pos_w[:, 2].unsqueeze(1) - sensor.data.ray_hits_w[..., 2] - offset
 
 
+def foot_scan(env: ManagerBasedEnv, sensor_cfg: SceneEntityCfg) -> torch.Tensor:
+    """Foot scan works to find the absolute distance between the foot and ground through transformation calculations"""
+    
+    foot_ray_data = env.scene.sensors[sensor_cfg.name].data
+
+    def _quat_to_mat(q: torch.Tensor) -> torch.Tensor:
+        """
+        q : (B, 4) quaternion in (w, x, y, z) order
+        returns R_w_s : (B, 3, 3) rotation matrix “world ← sensor”
+        """
+        w, x, y, z = q.unbind(-1)
+
+        x2, y2, z2 = x * x, y * y, z * z
+        xy, xz, yz = x * y, x * z, y * z
+        wx, wy, wz = w * x, w * y, w * z
+
+        R = torch.stack(
+            (
+                1 - 2 * (y2 + z2), 2 * (xy - wz),       2 * (xz + wy),
+                2 * (xy + wz),     1 - 2 * (x2 + z2),   2 * (yz - wx),
+                2 * (xz - wy),     2 * (yz + wx),       1 - 2 * (x2 + y2),
+            ),
+            dim=-1,
+        ).view(-1, 3, 3)
+
+        return R
+
+
+
+    def _foot_sensor_distance(foot_data) -> torch.Tensor:
+        """
+        Vectorised version of `_foot_sensor_reward` suitable for training loops.
+
+        Returns
+        -------
+        torch.Tensor   (0‑D / scalar) summed reward for the current mini‑batch
+        """
+        pos_w:   torch.Tensor = foot_data.pos_w
+        quat_w:  torch.Tensor = foot_data.quat_w
+        hits_w:  torch.Tensor = foot_data.ray_hits_w
+        starts_s:torch.Tensor = foot_data.ray_starts
+
+        # Filtering against situations where foot sensor does not hit the ground with high value of 10
+        hits_w = torch.where(torch.isinf(hits_w), 
+                torch.full_like(hits_w, 10.0),
+        hits_w)    
+
+
+        # Constructing rotational matrix from the rotational quaternion
+        R_w_s = _quat_to_mat(quat_w)
+        R_s_w = R_w_s.transpose(-2, -1)
+
+        # Distance between origin and point in the world frame
+        r_w = hits_w - pos_w.unsqueeze(1)
+
+        # Distance between origin and point in the sensor frame
+        r_s = torch.matmul(R_s_w.unsqueeze(1), r_w.unsqueeze(-1)).squeeze(-1)
+
+
+        # Distance between sensor grid and ground dots
+        delta_z = (starts_s - r_s)[..., 2]
+
+        return delta_z
+
+
+    return _foot_sensor_distance(foot_ray_data)
+
+
 def body_incoming_wrench(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg) -> torch.Tensor:
     """Incoming spatial wrench on bodies of an articulation in the simulation world frame.
 
