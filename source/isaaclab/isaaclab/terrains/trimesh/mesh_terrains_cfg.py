@@ -67,6 +67,22 @@ class MeshInvertedPyramidStairsTerrainCfg(MeshPyramidStairsTerrainCfg):
 
 
 @configclass
+class MeshStepStoneTerrainCfg(SubTerrainBaseCfg):
+
+    function = mesh_terrains.step_stones_terrain
+    """The width of the square platform at the center of the terrain. Defaults to 1.0."""
+    platform_width: int = 2
+    
+    step_stone_divisions: int = 10
+
+    step_stone_ratio: float = 0.8
+
+    step_stone_thickness: float = 0.2
+
+    termination_level_height: float = 2.5
+    
+
+@configclass
 class MeshRandomGridTerrainCfg(SubTerrainBaseCfg):
     """Configuration for a random grid mesh terrain."""
 

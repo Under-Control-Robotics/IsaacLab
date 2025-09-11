@@ -17,6 +17,7 @@ from .mesh_terrains_cfg import (
     MeshFloatingRingTerrainCfg,
     MeshGapTerrainCfg,
     MeshInvertedPyramidStairsTerrainCfg,
+    MeshStepStoneTerrainCfg,
     MeshPitTerrainCfg,
     MeshPlaneTerrainCfg,
     MeshPyramidStairsTerrainCfg,

@@ -245,7 +245,44 @@ def inverted_pyramid_stairs_terrain(
     origin = np.array([terrain_center[0], terrain_center[1], -(num_steps + 1) * step_height])
 
     return meshes_list, origin
+    # return list(), origin
 
+
+def step_stones_terrain(
+    difficulty: float, cfg: mesh_terrains_cfg.MeshStepStoneTerrainCfg
+) -> tuple[list[trimesh.Trimesh], np.ndarray]:
+    
+    terrain_center = [0.5 * cfg.size[0], 0.5 * cfg.size[1], 0.0]
+    origin = np.array([terrain_center[0], terrain_center[1], terrain_center[2]])
+
+    step_stone_grid_length = cfg.size[0]/cfg.step_stone_divisions
+    step_stone_length = step_stone_grid_length * cfg.step_stone_ratio
+
+    meshes_list = list()  
+
+    center_platform_size = (cfg.platform_width, cfg.platform_width, cfg.step_stone_thickness)
+    center_platform_pos = (terrain_center[0], terrain_center[1], terrain_center[2] - center_platform_size[2]/2)
+    center_platform = trimesh.creation.box(center_platform_size, trimesh.transformations.translation_matrix(center_platform_pos))
+    meshes_list.append(center_platform)
+
+    termination_platform_size = (cfg.size[0], cfg.size[1], 0.1)
+    termination_platform_pos = (terrain_center[0], terrain_center[1], terrain_center[2] - cfg.termination_level_height)
+    termination_platform = trimesh.creation.box(termination_platform_size, trimesh.transformations.translation_matrix(termination_platform_pos))
+    meshes_list.append(termination_platform)
+    
+    box_dims = (step_stone_length, step_stone_length, cfg.step_stone_thickness)
+
+    for i_x in range(cfg.step_stone_divisions):
+        for i_y in range(cfg.step_stone_divisions):
+
+            box_pos = (terrain_center[0] - cfg.size[0]/2 + (step_stone_grid_length/2) + i_x * step_stone_grid_length, 
+                        terrain_center[1] - cfg.size[1]/2 + (step_stone_grid_length/2) + i_y * step_stone_grid_length
+                        , terrain_center[2] - cfg.step_stone_thickness/2)
+            box_middle = trimesh.creation.box(box_dims, trimesh.transformations.translation_matrix(box_pos))
+            meshes_list.append(box_middle)
+    
+    return meshes_list, origin
+    
 
 def random_grid_terrain(
     difficulty: float, cfg: mesh_terrains_cfg.MeshRandomGridTerrainCfg
