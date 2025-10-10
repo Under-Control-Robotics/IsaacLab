@@ -960,7 +960,7 @@ def apply_external_force_torque(
     force_range: tuple[float, float],
     torque_range: tuple[float, float],
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
-    visualize: bool = False,
+    visualize: bool | None = None,
 ):
     """Randomize the external forces and torques applied to the bodies.
 
@@ -976,6 +976,12 @@ def apply_external_force_torque(
         env_ids = torch.arange(env.scene.num_envs, device=asset.device)
     # resolve number of bodies
     num_bodies = len(asset_cfg.body_ids) if isinstance(asset_cfg.body_ids, list) else asset.num_bodies
+
+    # automatically determine visualization mode if not explicitly set
+    if visualize is None:
+        # Enable visualization during inference/play mode (with GUI)
+        # Disable during training mode (headless or no rendering)
+        visualize = env.sim.has_gui() and env.sim.render_mode == env.sim.RenderMode.FULL_RENDERING
 
     # sample random forces and torques
     size = (len(env_ids), num_bodies, 3)
