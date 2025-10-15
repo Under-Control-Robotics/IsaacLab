@@ -960,7 +960,6 @@ def apply_external_force_torque(
     force_range: tuple[float, float],
     torque_range: tuple[float, float],
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
-    visualize: bool | None = None,
 ):
     """Randomize the external forces and torques applied to the bodies.
 
@@ -970,18 +969,22 @@ def apply_external_force_torque(
     applied when ``asset.write_data_to_sim()`` is called in the environment.
     """
     # extract the used quantities (to enable type-hinting)
+    visualize = None
     asset: RigidObject | Articulation = env.scene[asset_cfg.name]
     # resolve environment ids
     if env_ids is None:
         env_ids = torch.arange(env.scene.num_envs, device=asset.device)
     # resolve number of bodies
     num_bodies = len(asset_cfg.body_ids) if isinstance(asset_cfg.body_ids, list) else asset.num_bodies
-
     # automatically determine visualization mode if not explicitly set
     if visualize is None:
         # Enable visualization during inference/play mode (with GUI)
         # Disable during training mode (headless or no rendering)
-        visualize = env.sim.has_gui() and env.sim.render_mode == env.sim.RenderMode.FULL_RENDERING
+        visualize = (
+            env.sim.has_gui()
+            and env.sim.render_mode == env.sim.RenderMode.FULL_RENDERING
+            and torch.is_inference_mode_enabled()
+        )
 
     # sample random forces and torques
     size = (len(env_ids), num_bodies, 3)
@@ -994,7 +997,6 @@ def apply_external_force_torque(
         global force_visualizer
         if force_visualizer is None:
             force_visualizer = VisualizationMarkers(force_marker_cfg)
-
         asset: Articulation = env.scene[asset_cfg.name]
         # Get body positions where forces are applied
         body_positions = asset.data.body_pos_w[:, asset_cfg.body_ids]  # Shape: (num_envs, num_bodies, 3)
@@ -1010,15 +1012,16 @@ def apply_external_force_torque(
             scales=arrow_scales.view(-1, 3)
         )
 
+
 def _resolve_force_to_arrow(force: torch.Tensor):
     # arrow-scale
-    arrow_scale = torch.tensor([0.25]).repeat(
+    arrow_scale = torch.tensor([0.25], device=force.device).repeat(
         force.shape[0], force.shape[1], 3
     )
     force_norm = torch.linalg.norm(force, dim=2) 
     arrow_scale[:, :, 0] *= force_norm * 1.0
     # arrow-direction
-    arrow_z = torch.tensor((0, 0, 1.0))
+    arrow_z = torch.tensor((0, 0, 1.0), device=force.device)
     force_n = torch.nn.functional.normalize(force, dim=-1)
     cross_p = torch.linalg.cross(arrow_z[None, None, :], force_n)
     qw = torch.matmul(arrow_z[None, None, None, :], force_n[..., None])[..., 0]
