@@ -32,24 +32,25 @@ from isaaclab.assets import Articulation, DeformableObject, RigidObject
 from isaaclab.managers import EventTermCfg, ManagerTermBase, SceneEntityCfg
 from isaaclab.terrains import TerrainImporter
 from isaaclab.utils.version import compare_versions
-from isaaclab.markers import VisualizationMarkers, VisualizationMarkersCfg   
-from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR  
+from isaaclab.markers import VisualizationMarkers, VisualizationMarkersCfg
+from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedEnv
 
 
-force_marker_cfg = VisualizationMarkersCfg(  
-    prim_path="/Visuals/ExternalForces",  
-    markers={  
-        "force_arrow": sim_utils.UsdFileCfg(  
-            usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/UIElements/arrow_x.usd",  
-            scale=(1.0, 0.1, 0.1),  
-            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 0.0, 0.0)),  
-        )  
-    }  
-)  
+force_marker_cfg = VisualizationMarkersCfg(
+    prim_path="/Visuals/ExternalForces",
+    markers={
+        "force_arrow": sim_utils.UsdFileCfg(
+            usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/UIElements/arrow_x.usd",
+            scale=(1.0, 0.1, 0.1),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 0.0, 0.0)),
+        )
+    },
+)
 force_visualizer = None
+
 
 def randomize_rigid_body_scale(
     env: ManagerBasedEnv,
@@ -990,17 +991,23 @@ def apply_external_force_torque(
             force_visualizer = VisualizationMarkers(force_marker_cfg)
         asset: Articulation = env.scene[asset_cfg.name]
         # Get body positions where forces are applied
-        body_positions = asset.data.body_pos_w[:, asset_cfg.body_ids]  # Shape: (num_envs, num_bodies, 3)
-        forces = asset._external_force_b[:, asset_cfg.body_ids]  # Shape: (num_envs, num_bodies, 3)
-        arrow_scales, arrow_orientations = _resolve_force_to_arrow(forces)  # Implement this function
+        body_positions = asset.data.body_pos_w[
+            :, asset_cfg.body_ids
+        ]  # Shape: (num_envs, num_bodies, 3)
+        forces = asset._external_force_b[
+            :, asset_cfg.body_ids
+        ]  # Shape: (num_envs, num_bodies, 3)
+        arrow_scales, arrow_orientations = _resolve_force_to_arrow(
+            forces
+        )  # Implement this function
 
         # Compute orientations to align arrows with force direction
         # (You'll need to use math_utils.quat_from_angle_axis or similar)
 
-        force_visualizer.visualize(  
+        force_visualizer.visualize(
             translations=body_positions.view(-1, 3),
             orientations=arrow_orientations.view(-1, 4),
-            scales=arrow_scales.view(-1, 3)
+            scales=arrow_scales.view(-1, 3),
         )
 
 
