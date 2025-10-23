@@ -39,12 +39,14 @@ if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedEnv
 
 
+
+
 force_marker_cfg = VisualizationMarkersCfg(
     prim_path="/Visuals/ExternalForces",
     markers={
         "force_arrow": sim_utils.UsdFileCfg(
             usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/UIElements/arrow_x.usd",
-            scale=(1.0, 0.1, 0.1),
+            scale=(1.0, 1.0, 1.0),
             visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=((1.0, 0.984, 0.0))),
         )
     },
@@ -976,7 +978,11 @@ def apply_external_force_torque(
     if env_ids is None:
         env_ids = torch.arange(env.scene.num_envs, device=asset.device)
     # resolve number of bodies
-    num_bodies = len(asset_cfg.body_ids) if isinstance(asset_cfg.body_ids, list) else asset.num_bodies
+    num_bodies = (
+        len(asset_cfg.body_ids)
+        if isinstance(asset_cfg.body_ids, list)
+        else asset.num_bodies
+    )
     # automatically determine visualization mode if not explicitly set
     # sample random forces and torques
     size = (len(env_ids), num_bodies, 3)
@@ -984,7 +990,9 @@ def apply_external_force_torque(
     torques = math_utils.sample_uniform(*torque_range, size, asset.device)
     # set the forces and torques into the buffers
     # note: these are only applied when you call: `asset.write_data_to_sim()`
-    asset.set_external_force_and_torque(forces, torques, env_ids=env_ids, body_ids=asset_cfg.body_ids)
+    asset.set_external_force_and_torque(
+        forces, torques, env_ids=env_ids, body_ids=asset_cfg.body_ids
+    )
     if visualize:
         global force_visualizer
         if force_visualizer is None:
@@ -1003,7 +1011,7 @@ def apply_external_force_torque(
 
         # Compute orientations to align arrows with force direction
         # (You'll need to use math_utils.quat_from_angle_axis or similar)
-
+        # import ipdb; ipdb.set_trace()
         force_visualizer.visualize(
             translations=body_positions.view(-1, 3),
             orientations=arrow_orientations.view(-1, 4),
@@ -1013,17 +1021,17 @@ def apply_external_force_torque(
 
 def _resolve_force_to_arrow(force: torch.Tensor):
     # arrow-scale
-    arrow_scale = torch.tensor([0.25], device=force.device).repeat(
+    arrow_scale = torch.tensor([0.10], device=force.device).repeat(
         force.shape[0], force.shape[1], 3
     )
-    force_norm = torch.linalg.norm(force, dim=2) 
-    arrow_scale[:, :, 0] *= force_norm * 1.0
+    force_norm = torch.linalg.norm(force, dim=2)
+    arrow_scale[:, :, 0] *= force_norm * 0.25
     # arrow-direction
     arrow_z = torch.tensor((0, 0, 1.0), device=force.device)
     force_n = torch.nn.functional.normalize(force, dim=-1)
     cross_p = torch.linalg.cross(arrow_z[None, None, :], force_n)
     qw = torch.matmul(arrow_z[None, None, None, :], force_n[..., None])[..., 0]
-    arrow_quat = torch.cat((qw, cross_p), axis=-1)
+    arrow_quat = torch.cat((qw, cross_p), dim=-1)
     return arrow_scale, arrow_quat
 
 
