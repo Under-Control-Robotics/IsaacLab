@@ -1,3 +1,24 @@
+[project]
+name = "isaaclab"
+version = "2.3.0.dev0"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# Include all of the source code and apps in the wheel, matching
+# the NVIDIA pip package
+[tool.hatch.build.targets.wheel]
+include = ["apps", "source"]
+exclude = ["docs"]
+
+# Rewrite paths to match the NVIDIA pip package
+[tool.hatch.build.targets.wheel.sources]
+"apps" = "isaaclab/apps"
+"source" = "isaaclab/source"
+[tool.hatch.build]
+ignore-vcs = true
+
 [tool.isort]
 
 py_version = 310
