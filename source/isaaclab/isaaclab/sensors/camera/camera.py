@@ -101,7 +101,9 @@ class Camera(SensorBase):
         #   For example, if the prim path is "/World/Sensor_[1,2]".
         sensor_path = cfg.prim_path.split("/")[-1]
         sensor_path_is_regex = re.match(r"^[a-zA-Z0-9/_]+$", sensor_path) is None
-        if sensor_path_is_regex:
+        # TODO(sergey): remove the "and False" once nvidia fixes the cloning logic.
+        if sensor_path_is_regex and False:
+
             raise RuntimeError(
                 f"Invalid prim path for the camera sensor: {self.cfg.prim_path}."
                 "\n\tHint: Please ensure that the prim path does not contain any regex patterns in the leaf."

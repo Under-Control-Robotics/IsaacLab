@@ -310,6 +310,9 @@ def newton_replicate(
     # add by world, then by active sources in that world (column-wise)
     for col, env_id in enumerate(env_ids.tolist()):
         for row in torch.nonzero(mapping[:, col], as_tuple=True)[0].tolist():
+            # TODO(sergey): remove this once nvidia fixes the bug with cloning.
+            if row > 0:
+                continue
             builder.add_world(
                 protos[sources[row]],
                 xform=wp.transform(positions[col].tolist(), quaternions[col].tolist()),
