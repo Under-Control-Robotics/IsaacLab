@@ -65,6 +65,12 @@ parser.add_argument(
     choices=["position", "velocity", "none"],
     help="The type of control to use for the joint drive.",
 )
+parser.add_argument(
+    "--self-collision",
+    action="store_true",
+    default=False,
+    help="Enable self-collisions between links of the articulation.",
+)
 
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
@@ -111,6 +117,7 @@ def main():
         usd_file_name=os.path.basename(dest_path),
         fix_base=args_cli.fix_base,
         merge_fixed_joints=args_cli.merge_joints,
+        self_collision=args_cli.self_collision,
         force_usd_conversion=True,
         joint_drive=UrdfConverterCfg.JointDriveCfg(
             gains=UrdfConverterCfg.JointDriveCfg.PDGainsCfg(
